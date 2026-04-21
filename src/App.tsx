@@ -32,8 +32,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -45,32 +43,15 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
 
-// --- Mock Data ---
-const TIMELINE_DATA = [
-  { id: 1, title: "Voter Registration", date: "Month -6", description: "Ensure you are registered to vote in your specific district. Deadlines vary by state.", icon: <UserPlus className="w-5 h-5" />, status: "Completed" },
-  { id: 2, title: "Primary Elections", date: "Month -4", description: "Parties select their candidates for the general election.", icon: <History className="w-5 h-5" />, status: "Completed" },
-  { id: 3, title: "National Conventions", date: "Month -3", description: "Official nomination of presidential and vice-presidential candidates.", icon: <Award className="w-5 h-5" />, status: "Active" },
-  { id: 4, title: "Voter Education", date: "Month -2", description: "Research candidates, ballot measures, and local issues.", icon: <Info className="w-5 h-5" />, status: "Upcoming" },
-  { id: 5, title: "Early & Mail-in Voting", date: "Month -1", description: "Convenient options to cast your ballot before election day.", icon: <Clock className="w-5 h-5" />, status: "Upcoming" },
-  { id: 6, title: "General Election", date: "Nov 5", description: "The final decision day. Polls are open nationwide.", icon: <Vote className="w-5 h-5" />, status: "Upcoming" },
-];
-
-const VOTER_TRENDS = [
-  { year: '1992', turnout: 58.1 },
-  { year: '1996', turnout: 51.7 },
-  { year: '2000', turnout: 54.2 },
-  { year: '2004', turnout: 60.1 },
-  { year: '2008', turnout: 61.6 },
-  { year: '2012', turnout: 58.6 },
-  { year: '2016', turnout: 60.1 },
-  { year: '2020', turnout: 66.7 },
-];
-
-const FAQS = [
-  { question: "How do I register to vote?", answer: "Most states allow registration online, by mail, or in person at local election offices. Requirements vary, but usually include being a citizen and at least 18 years old." },
-  { question: "What is the deadline for mail-in ballots?", answer: "Deadlines differ significantly by state. Some require ballots to be received by election day, while others accept them if postmarked by then." },
-  { question: "Where is my polling place?", answer: "Your polling place is determined by your residential address. You can find it on your state's official election website or Secretary of State portal." },
-];
+// --- Internal Modules ---
+import { ChatMessage, LocationData, ChecklistItem, TimelineStep as TimelineStepType } from './types';
+import { 
+  TIMELINE_DATA, 
+  VOTER_TRENDS, 
+  FAQS, 
+  INITIAL_CHECKLIST, 
+  AI_CONFIG 
+} from './constants';
 
 // --- Components ---
 
@@ -100,7 +81,7 @@ const Navbar = () => (
 );
 
 const ChatAssistant = ({ location }: { location?: string }) => {
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string, citations?: any[] }[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'ai', content: "Hello! I'm your Election Pulse advisor. I can help you understand the voting process, registration deadlines, and how elections work. What would you like to know today?" }
   ]);
   const [input, setInput] = useState('');
@@ -128,15 +109,14 @@ const ChatAssistant = ({ location }: { location?: string }) => {
     setIsLoading(true);
 
     try {
-      const model = 'gemini-3-flash-preview';
       const prompt = `You are an expert Election Advisor. Answer the following user question about elections, voting processes, or political systems accurately and objectively. Current user location context: ${location || 'Unknown'}. 
       User: ${userMessage}`;
 
       const result = await genAI.models.generateContent({
-        model,
+        model: AI_CONFIG.model,
         contents: prompt,
         config: {
-          systemInstruction: "You are a professional, non-partisan election advisor. You help users understand voting processes, historical context, and technical steps. ALWAYS cite sources when provided by the grounding tool. If you provide a date or deadline, verify it using the search tool.",
+          systemInstruction: AI_CONFIG.systemInstruction,
           tools: [
             { googleSearch: {} }
           ],
@@ -199,17 +179,28 @@ const ChatAssistant = ({ location }: { location?: string }) => {
             </div>
             
             {m.role === 'ai' && (
-              <div className="mt-2 flex items-center gap-3 px-1 text-[10px] font-bold uppercase tracking-tight text-ink-700/40">
-                <div className="flex items-center gap-1 text-green-600">
-                  <ShieldCheck className="w-3 h-3" />
-                  Procedural Integrity: 99.8% confirmed
-                </div>
-                {m.citations && m.citations.length > 0 && (
-                  <div className="flex items-center gap-1 text-brand-blue cursor-help" title="Grounded via Google Search">
-                    <Search className="w-3 h-3" />
-                    Verified Sources
+              <div className="mt-2 flex flex-col gap-2 w-full">
+                <div className="flex items-center gap-3 px-1 text-[10px] font-bold uppercase tracking-tight text-ink-700/40">
+                  <div className="flex items-center gap-1 text-green-600">
+                    <ShieldCheck className="w-3 h-3" />
+                    Procedural Integrity: 99.8% confirmed
                   </div>
-                )}
+                  {m.citations && m.citations.length > 0 && (
+                    <div className="flex items-center gap-1 text-brand-blue cursor-help" title="Grounded via Google Search">
+                      <Search className="w-3 h-3" />
+                      Verified Sources
+                    </div>
+                  )}
+                </div>
+                {m.citations && m.citations.map((cite, idx) => (
+                  <div key={idx} className="bg-brand-blue/5 border border-brand-blue/10 rounded p-2 text-[9px] text-brand-blue flex items-center justify-between group">
+                    <div className="flex items-center gap-2">
+                       <ExternalLink className="w-3 h-3" />
+                       <span className="font-bold opacity-70">Source Grounding:</span>
+                       <div dangerouslySetInnerHTML={{ __html: cite.html }} className="citation-links" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </motion.div>
@@ -251,14 +242,74 @@ const ChatAssistant = ({ location }: { location?: string }) => {
   );
 };
 
+const TimelineStep = ({ step, index, total }: { step: TimelineStepType, index: number, total: number }) => {
+  const [isOpen, setIsOpen] = useState(index === 2); // default open the active one
+
+  return (
+    <div className="flex gap-4">
+      <div className="flex flex-col items-center">
+        <motion.div 
+          initial={{ scale: 0 }}
+          whileInView={{ scale: 1 }}
+          viewport={{ once: true }}
+          className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all ${
+            step.status === 'Completed' ? 'bg-green-500 text-white' : 
+            step.status === 'Active' ? 'bg-brand-blue text-white shadow-lg' : 
+            'bg-surface-100 text-ink-700/30'
+          }`}
+        >
+          {step.status === 'Completed' ? <CheckCircle2 className="w-5 h-5" /> : <span className="font-bold text-xs">{index + 1}</span>}
+        </motion.div>
+        {index !== total - 1 && (
+          <div className="w-0.5 h-full bg-surface-200 my-2" />
+        )}
+      </div>
+      
+      <div 
+        id={`timeline-card-${step.id}`} 
+        className={`flex-1 pro-card mb-6 last:mb-0 transition-all cursor-pointer ${isOpen ? 'ring-2 ring-brand-blue/5 border-brand-blue/20' : 'hover:bg-surface-50'}`} 
+        onClick={() => setIsOpen(!isOpen)}
+        role="button"
+        aria-expanded={isOpen}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${step.status === 'Active' ? 'text-brand-blue' : 'text-slate-400'}`}>Stage 0{index + 1} • {step.date}</span>
+            <h4 className="text-lg font-bold text-ink-800 mt-1">{step.title}</h4>
+          </div>
+          <div className="text-ink-700/30">
+            {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </div>
+        </div>
+        
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 pt-4 border-t border-surface-100">
+                <p className="text-ink-700/70 text-sm leading-relaxed text-xs">
+                  {step.description}
+                </p>
+                <div className="mt-6 flex gap-3">
+                  <button className="text-[9px] font-bold uppercase tracking-widest bg-ink-900 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-brand-blue transition-colors">
+                    Access Official Protocol <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
 const VoterChecklist = () => {
-  const [items, setItems] = useState([
-    { id: 1, text: "Verify Registration Status", checked: true },
-    { id: 2, text: "Locate Certified Polling Station", checked: false },
-    { id: 3, text: "Review Sample Ballot Data", checked: false },
-    { id: 4, text: "Check Valid Identification Laws", checked: false },
-    { id: 5, text: "Finalize Election Day Schedule", checked: false },
-  ]);
+  const [items, setItems] = useState<ChecklistItem[]>(INITIAL_CHECKLIST);
 
   const toggle = (id: number) => {
     setItems(items.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
@@ -315,7 +366,7 @@ const VoterChecklist = () => {
 
 export default function App() {
   const [zipCode, setZipCode] = useState('');
-  const [location, setLocation] = useState<{ city: string, state: string } | null>(null);
+  const [location, setLocation] = useState<LocationData | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
   const fetchLocation = async (zip: string) => {
@@ -487,17 +538,15 @@ export default function App() {
         <section id="process" className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
             <div className="pro-card flex-1">
-              <h2 className="text-xs font-bold text-ink-700 uppercase tracking-widest mb-6 px-2">Cycle Architecture</h2>
-              <div className="space-y-1">
+              <h2 className="text-xs font-bold text-ink-700 uppercase tracking-widest mb-8 px-2">Cycle Architecture</h2>
+              <div className="space-y-2">
                 {TIMELINE_DATA.map((step, idx) => (
-                  <div key={idx} className={`p-4 transition-all border-l-4 rounded-r-md flex items-center justify-between group ${step.status === 'Active' ? 'pro-active-sidebar' : 'pro-hover-sidebar cursor-pointer'}`}>
-                    <div>
-                      <p className={`text-[9px] font-bold ${step.status === 'Active' ? 'text-brand-blue' : 'text-slate-400'}`}>PHASE 0{idx + 1}</p>
-                      <p className={`text-xs font-semibold ${step.status === 'Active' ? 'text-ink-900' : 'text-ink-700/60'}`}>{step.title}</p>
-                    </div>
-                    {step.status === 'Completed' && <CheckCircle2 size={14} className="text-green-500" />}
-                    {step.status === 'Active' && <Clock size={14} className="text-brand-blue animate-pulse" />}
-                  </div>
+                  <TimelineStep 
+                    key={step.id} 
+                    step={step} 
+                    index={idx} 
+                    total={TIMELINE_DATA.length} 
+                  />
                 ))}
               </div>
             </div>
