@@ -34,12 +34,23 @@ export const FAQS: FAQItem[] = [
 ];
 
 export const INITIAL_CHECKLIST: ChecklistItem[] = [
-  { id: 1, text: "Verify Registration Status", checked: true },
+  { id: 1, text: "Verify Registration Status", checked: false },
   { id: 2, text: "Locate Certified Polling Station", checked: false },
   { id: 3, text: "Review Sample Ballot Data", checked: false },
   { id: 4, text: "Check Valid Identification Laws", checked: false },
   { id: 5, text: "Finalize Election Day Schedule", checked: false },
 ];
+
+export const STATE_WAIT_FACTORS: Record<string, number> = {
+  'California': 0.8,
+  'Texas': 1.2,
+  'New York': 1.1,
+  'Florida': 1.3,
+  'Georgia': 1.4,
+  'Arizona': 1.2,
+  'Pennsylvania': 1.1,
+  'Default': 1.0
+};
 
 export const AI_CONFIG = {
   model: 'gemini-3-flash-preview',

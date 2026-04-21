@@ -3,371 +3,104 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Vote, 
-  Calendar, 
-  Info, 
-  MessageSquare, 
-  ChevronRight, 
-  CheckCircle2, 
   MapPin, 
-  UserPlus, 
-  Clock, 
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  BarChart3,
-  Lightbulb,
-  Send,
-  Loader2,
-  X,
-  History,
+  Loader2, 
+  ShieldCheck,
   TrendingUp,
   Award,
-  Globe,
-  ShieldCheck,
-  Download,
-  Search
+  Lightbulb,
+  UserPlus,
+  History
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area 
-} from 'recharts';
-import { GoogleGenAI } from "@google/genai";
-import Markdown from 'react-markdown';
+import { motion } from 'motion/react';
+import React from 'react';
 
 // --- Internal Modules ---
-import { ChatMessage, LocationData, ChecklistItem, TimelineStep as TimelineStepType } from './types';
+import { LocationData } from './types';
 import { 
   TIMELINE_DATA, 
   VOTER_TRENDS, 
-  FAQS, 
-  INITIAL_CHECKLIST, 
-  AI_CONFIG 
+  FAQS 
 } from './constants';
 
 // --- Components ---
+import Navbar from './components/Navbar';
+import ChatAssistant from './components/ChatAssistant';
+import TimelineStep from './components/TimelineStep';
+import VoterChecklist from './components/VoterChecklist';
+import LocalMetrics from './components/LocalMetrics';
+import HistoricalPulse from './components/HistoricalPulse';
+import PollingStationMap from './components/PollingStationMap';
 
-const Navbar = () => (
-  <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-surface-200">
-    <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-4">
-      <div className="flex items-center gap-2 group cursor-pointer">
-        <div className="w-8 h-8 bg-brand-blue rounded flex items-center justify-center text-white font-bold transition-transform group-hover:scale-110">E</div>
-        <span className="text-xl font-bold tracking-tight text-ink-800 underline-brand">ElectionPulse.ai</span>
-      </div>
-      <div className="hidden md:flex items-center gap-6">
-        <div className="flex flex-col items-end pr-4 border-r border-surface-200">
-          <span className="text-[10px] uppercase tracking-widest text-ink-700/50 font-bold">Cycle Status</span>
-          <span className="text-xs font-semibold text-ink-700">2026 Midterms • Active</span>
-        </div>
-        <div className="flex items-center gap-6 text-sm font-medium">
-          <a href="#process" className="hover:text-brand-blue transition-colors">Process</a>
-          <a href="#stats" className="hover:text-brand-blue transition-colors">Insights</a>
-          <a href="#assistant" className="text-brand-blue font-bold">AI Advisor</a>
-          <button className="px-4 py-2 bg-ink-900 text-white text-sm font-medium rounded-md hover:bg-ink-800 transition-colors shadow-sm">
-            Check Status
-          </button>
-        </div>
-      </div>
-    </div>
-  </nav>
-);
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
 
-const ChatAssistant = ({ location }: { location?: string }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'ai', content: "Hello! I'm your Election Pulse advisor. I can help you understand the voting process, registration deadlines, and how elections work. What would you like to know today?" }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: boolean }> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Institutional Error caught:", error, errorInfo);
+  }
 
-    if (!process.env.GEMINI_API_KEY) {
-      setMessages(prev => [...prev, { role: 'ai', content: "Error: GEMINI_API_KEY is not configured in environment secrets." }]);
-      return;
-    }
-
-    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const userMessage = input.trim();
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setIsLoading(true);
-
-    try {
-      const prompt = `You are an expert Election Advisor. Answer the following user question about elections, voting processes, or political systems accurately and objectively. Current user location context: ${location || 'Unknown'}. 
-      User: ${userMessage}`;
-
-      const result = await genAI.models.generateContent({
-        model: AI_CONFIG.model,
-        contents: prompt,
-        config: {
-          systemInstruction: AI_CONFIG.systemInstruction,
-          tools: [
-            { googleSearch: {} }
-          ],
-        }
-      });
-
-      // Extract grounding metadata if exists
-      const citations = result.candidates?.[0]?.groundingMetadata?.searchEntryPoint?.renderedContent 
-        ? [{ title: "Google Search Grounding", html: result.candidates[0].groundingMetadata.searchEntryPoint.renderedContent }]
-        : [];
-
-      setMessages(prev => [...prev, { 
-        role: 'ai', 
-        content: result.text || "I'm sorry, I couldn't process that request.",
-        citations
-      }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { role: 'ai', content: "Something went wrong. Please try again later." }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div id="advisor-chat-container" className="pro-card flex flex-col h-[600px] overflow-hidden p-0" role="region" aria-label="AI Election Advisor Chat">
-      <div id="advisor-header" className="bg-ink-900 p-4 text-white flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-white/10 p-2 rounded-lg">
-            <Globe className="w-5 h-5 text-brand-blue" />
-          </div>
-          <div>
-            <h3 className="font-bold leading-none text-sm uppercase tracking-wide">Live Grounded Advisor</h3>
-            <p className="text-[10px] opacity-50 mt-1 uppercase tracking-widest flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> Grounded Intelligence
-            </p>
-          </div>
-        </div>
-        <div className="px-3 py-1 bg-brand-blue/20 border border-brand-blue/30 rounded flex items-center gap-2">
-          <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-pulse" />
-          <span className="text-[10px] uppercase font-bold tracking-widest text-brand-blue">Active Connection</span>
-        </div>
-      </div>
-      
-      <div id="advisor-chat-history" ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-surface-50 custom-scrollbar" aria-live="polite">
-        {messages.map((m, i) => (
-          <motion.div 
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
-          >
-            <div className={`max-w-[85%] p-4 rounded-xl shadow-sm ${
-              m.role === 'user' 
-                ? 'bg-brand-blue text-white rounded-tr-none' 
-                : 'bg-white text-ink-800 rounded-tl-none border border-surface-200'
-            }`}>
-              <div className="prose prose-sm prose-slate max-w-none">
-                 <Markdown>{m.content}</Markdown>
-              </div>
-            </div>
-            
-            {m.role === 'ai' && (
-              <div className="mt-2 flex flex-col gap-2 w-full">
-                <div className="flex items-center gap-3 px-1 text-[10px] font-bold uppercase tracking-tight text-ink-700/40">
-                  <div className="flex items-center gap-1 text-green-600">
-                    <ShieldCheck className="w-3 h-3" />
-                    Procedural Integrity: 99.8% confirmed
-                  </div>
-                  {m.citations && m.citations.length > 0 && (
-                    <div className="flex items-center gap-1 text-brand-blue cursor-help" title="Grounded via Google Search">
-                      <Search className="w-3 h-3" />
-                      Verified Sources
-                    </div>
-                  )}
-                </div>
-                {m.citations && m.citations.map((cite, idx) => (
-                  <div key={idx} className="bg-brand-blue/5 border border-brand-blue/10 rounded p-2 text-[9px] text-brand-blue flex items-center justify-between group">
-                    <div className="flex items-center gap-2">
-                       <ExternalLink className="w-3 h-3" />
-                       <span className="font-bold opacity-70">Source Grounding:</span>
-                       <div dangerouslySetInnerHTML={{ __html: cite.html }} className="citation-links" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white p-4 rounded-xl rounded-tl-none border border-surface-200 shadow-sm flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-brand-blue" />
-              <span className="text-xs font-medium text-ink-700/50 uppercase tracking-wider">Grounding with Live Data...</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div id="advisor-input-area" className="p-4 bg-white border-t border-surface-200">
-        <label htmlFor="advisor-message-input" className="sr-only">Message the AI Advisor</label>
-        <div className="relative flex items-center gap-2">
-          <input 
-            id="advisor-message-input"
-            type="text" 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about turnout, deadlines, or process..."
-            className="flex-1 bg-surface-50 border border-surface-200 focus:border-brand-blue/30 rounded-lg px-4 py-3 outline-none transition-all text-sm"
-          />
-          <button 
-            id="advisor-send-button"
-            onClick={handleSend}
-            disabled={isLoading}
-            aria-label="Send message"
-            className="p-3 bg-brand-blue text-white rounded-lg hover:bg-brand-blue/90 transition-colors disabled:opacity-50 shadow-sm"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const TimelineStep = ({ step, index, total }: { step: TimelineStepType, index: number, total: number }) => {
-  const [isOpen, setIsOpen] = useState(index === 2); // default open the active one
-
-  return (
-    <div className="flex gap-4">
-      <div className="flex flex-col items-center">
-        <motion.div 
-          initial={{ scale: 0 }}
-          whileInView={{ scale: 1 }}
-          viewport={{ once: true }}
-          className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all ${
-            step.status === 'Completed' ? 'bg-green-500 text-white' : 
-            step.status === 'Active' ? 'bg-brand-blue text-white shadow-lg' : 
-            'bg-surface-100 text-ink-700/30'
-          }`}
-        >
-          {step.status === 'Completed' ? <CheckCircle2 className="w-5 h-5" /> : <span className="font-bold text-xs">{index + 1}</span>}
-        </motion.div>
-        {index !== total - 1 && (
-          <div className="w-0.5 h-full bg-surface-200 my-2" />
-        )}
-      </div>
-      
-      <div 
-        id={`timeline-card-${step.id}`} 
-        className={`flex-1 pro-card mb-6 last:mb-0 transition-all cursor-pointer ${isOpen ? 'ring-2 ring-brand-blue/5 border-brand-blue/20' : 'hover:bg-surface-50'}`} 
-        onClick={() => setIsOpen(!isOpen)}
-        role="button"
-        aria-expanded={isOpen}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${step.status === 'Active' ? 'text-brand-blue' : 'text-slate-400'}`}>Stage 0{index + 1} • {step.date}</span>
-            <h4 className="text-lg font-bold text-ink-800 mt-1">{step.title}</h4>
-          </div>
-          <div className="text-ink-700/30">
-            {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </div>
-        </div>
-        
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+          <div className="pro-card max-w-md text-center">
+            <ShieldCheck className="w-12 h-12 text-brand-blue mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-ink-900 mb-2">Protocol Disruption</h2>
+            <p className="text-sm text-ink-700/60 mb-6">A procedural anomaly has occurred. Please refresh the interface to re-establish secure sync.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-brand-blue text-white rounded font-bold text-xs uppercase tracking-widest"
             >
-              <div className="mt-4 pt-4 border-t border-surface-100">
-                <p className="text-ink-700/70 text-sm leading-relaxed text-xs">
-                  {step.description}
-                </p>
-                <div className="mt-6 flex gap-3">
-                  <button className="text-[9px] font-bold uppercase tracking-widest bg-ink-900 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-brand-blue transition-colors">
-                    Access Official Protocol <ExternalLink className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-};
-
-const VoterChecklist = () => {
-  const [items, setItems] = useState<ChecklistItem[]>(INITIAL_CHECKLIST);
-
-  const toggle = (id: number) => {
-    setItems(items.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
-  };
-
-  const progress = Math.round((items.filter(i => i.checked).length / items.length) * 100);
-
-  return (
-    <div className="pro-card bg-ink-900 border-none text-white overflow-hidden flex flex-col h-full shadow-2xl">
-      <div className="p-6 border-b border-white/5">
-        <div className="flex items-center justify-between mb-4">
-           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Personnel Protocol</h3>
-           <ShieldCheck className="w-4 h-4 text-brand-blue" />
-        </div>
-        <h4 className="text-lg font-bold mb-1">Voter Preparedness</h4>
-        <div className="w-full bg-white/10 h-1 rounded-full mt-4 overflow-hidden">
-           <motion.div 
-             className="bg-brand-blue h-full"
-             initial={{ width: 0 }}
-             animate={{ width: `${progress}%` }}
-           />
-        </div>
-        <p className="text-[10px] font-bold text-brand-blue mt-2 uppercase tracking-tighter">{progress}% Operational Readiness</p>
-      </div>
-      
-      <div className="flex-1 p-6 space-y-3 overflow-y-auto">
-        {items.map(item => (
-          <div 
-            key={item.id} 
-            onClick={() => toggle(item.id)}
-            className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 cursor-pointer transition-colors group"
-          >
-            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${item.checked ? 'bg-brand-blue border-brand-blue' : 'border-white/20'}`}>
-              {item.checked && <CheckCircle2 className="w-3 h-3 text-white" />}
-            </div>
-            <span className={`text-xs font-medium transition-all ${item.checked ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
-              {item.text}
-            </span>
+              Re-Sync System
+            </button>
           </div>
-        ))}
-      </div>
-      
-      <div className="p-6 bg-white/5 border-t border-white/5 flex gap-2">
-        <button className="flex-1 py-2 bg-brand-blue text-white rounded text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-blue/80 transition-colors">
-          <Download className="w-3 h-3" /> Export Report
-        </button>
-        <button className="flex-1 py-2 border border-white/20 rounded text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-colors text-white">
-          <Calendar className="w-3 h-3" /> Reminders
-        </button>
-      </div>
-    </div>
-  );
-};
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [zipCode, setZipCode] = useState('');
   const [location, setLocation] = useState<LocationData | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isHighContrast, setIsHighContrast] = useState(false);
+  const [dailyTip, setDailyTip] = useState("Research local ballot measures to understand community impact.");
+
+  // Logic to fetch a 'Pro-Tip' from Gemini or a static pool for alignment
+  useEffect(() => {
+    const tips = [
+      "Check registration status 45 days before the cycle.",
+      "Verify polling station locations 48 hours before voting.",
+      "Review official sample ballots to save time at the booth.",
+      "Ensure identification documents meet state-specific criteria."
+    ];
+    setDailyTip(tips[Math.floor(Math.random() * tips.length)]);
+  }, []);
+
+  useEffect(() => {
+    if (isHighContrast) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isHighContrast]);
 
   const fetchLocation = async (zip: string) => {
     if (zip.length !== 5) return;
@@ -389,8 +122,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-50">
-      <Navbar />
+    <ErrorBoundary>
+      <div className={`min-h-screen transition-colors duration-300 ${isHighContrast ? 'bg-neutral-900 font-sans' : 'bg-surface-50 font-sans'}`}>
+        <Navbar isHighContrast={isHighContrast} toggleContrast={() => setIsHighContrast(!isHighContrast)} />
 
       <main className="pt-24 min-h-screen max-w-7xl mx-auto p-6 flex flex-col gap-8">
         {/* --- Hero Section: Status Overview --- */}
@@ -486,41 +220,11 @@ export default function App() {
           <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
             <VoterChecklist />
             
-            <div className="pro-card flex flex-col">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-sm font-bold text-ink-900 uppercase tracking-widest">Historical Pulse</h3>
-                  <p className="text-[10px] text-ink-700/50">Voter Turnout Trends (%)</p>
-                </div>
-                <TrendingUp className="w-5 h-5 text-brand-blue" aria-hidden="true" />
-              </div>
-              <div className="flex-1 min-h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={VOTER_TRENDS}>
-                    <defs>
-                      <linearGradient id="colorTurnout" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" opacity={0.2} />
-                    <XAxis dataKey="year" hide />
-                    <YAxis hide domain={[40, 80]} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '10px' }}
-                    />
-                    <Area type="monotone" dataKey="turnout" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#colorTurnout)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-6 pt-6 border-t border-surface-100 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-ink-700/40 uppercase">2026 Forecast</span>
-                  <span className="text-lg font-extrabold text-brand-blue tracking-tighter">62.4%</span>
-                </div>
-                <button className="text-[10px] font-bold uppercase tracking-widest text-brand-blue hover:underline">Full Report &rarr;</button>
-              </div>
-            </div>
+            {location && <LocalMetrics location={location} />}
+            
+            <HistoricalPulse />
+            
+            {location && <PollingStationMap location={location} />}
             
             <div className="pro-accent-card flex items-center gap-4">
               <div className="bg-brand-blue p-2 rounded-lg text-white">
@@ -652,5 +356,6 @@ export default function App() {
         </div>
       </footer>
     </div>
+  </ErrorBoundary>
   );
 }

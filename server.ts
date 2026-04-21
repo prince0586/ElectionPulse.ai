@@ -1,6 +1,9 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 
@@ -11,9 +14,23 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // API routes go here
+  // Security & Efficiency Middleware
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disabled for Vite dev server compatibility
+  }));
+  app.use(compression());
+  
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use("/api/", limiter);
+
+  // API routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   const distPath = path.join(process.cwd(), "dist");
