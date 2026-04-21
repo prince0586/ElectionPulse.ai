@@ -72,9 +72,6 @@ const FAQS = [
   { question: "Where is my polling place?", answer: "Your polling place is determined by your residential address. You can find it on your state's official election website or Secretary of State portal." },
 ];
 
-// --- AI Service ---
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 // --- Components ---
 
 const Navbar = () => (
@@ -119,6 +116,12 @@ const ChatAssistant = ({ location }: { location?: string }) => {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    if (!process.env.GEMINI_API_KEY) {
+      setMessages(prev => [...prev, { role: 'ai', content: "Error: GEMINI_API_KEY is not configured in environment secrets." }]);
+      return;
+    }
+
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
