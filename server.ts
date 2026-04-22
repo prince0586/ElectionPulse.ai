@@ -33,18 +33,24 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  const distPath = path.join(process.cwd(), "dist");
+  const distPath = path.resolve(__dirname, "dist");
   const hasDist = fs.existsSync(distPath);
   
-  // Use Vite in development OR if production build is missing
-  if (process.env.NODE_ENV !== "production" || !hasDist) {
+  console.log(`[Institutional Log] Server starting. NODE_ENV: ${process.env.NODE_ENV}, Dist exists: ${hasDist}, Path: ${distPath}`);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[Institutional Log] Entering Development Mode via Vite Middleware.");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(distPath));
+    console.log("[Institutional Log] Entering Production Mode. Serving static assets.");
+    if (!hasDist) {
+      console.error("[CRITICAL ERROR] Dist directory missing. Run 'npm run build' before starting.");
+    }
+    app.use(express.static(distPath, { index: false }));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });

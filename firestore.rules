@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+    
+    function isValidUser(data) {
+      return data.size() == 4 &&
+             data.zipCode is string && data.zipCode.size() == 5 &&
+             data.isHighContrast is bool &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidChecklistItem(data) {
+      return data.size() == 3 &&
+             data.text is string && data.text.size() <= 200 &&
+             data.checked is bool &&
+             data.updatedAt is timestamp;
+    }
+
+    // --- Match Rules ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().updatedAt == request.time &&
+                    incoming().createdAt == existing().createdAt &&
+                    (incoming().diff(existing()).affectedKeys().hasOnly(['zipCode', 'isHighContrast', 'updatedAt']));
+    }
+
+    match /users/{userId}/checklist/{itemId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(itemId) && isValidChecklistItem(incoming());
+      allow update: if isOwner(userId) && isValidChecklistItem(incoming()) &&
+                    incoming().updatedAt == request.time &&
+                    (incoming().diff(existing()).affectedKeys().hasOnly(['checked', 'updatedAt']));
+      allow delete: if isOwner(userId);
+    }
+  }
+}

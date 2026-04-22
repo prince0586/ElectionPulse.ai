@@ -31,6 +31,7 @@ export interface ChatMessage {
     title: string;
     html: string;
   }>;
+  confidenceScore?: number;
 }
 
 export interface LocationData {

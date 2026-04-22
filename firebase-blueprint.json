@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user-specific settings and localization preference.",
+      "type": "object",
+      "properties": {
+        "zipCode": { "type": "string", "description": "User's primary mailing zip code." },
+        "isHighContrast": { "type": "boolean", "description": "Accessibility preference." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["zipCode", "isHighContrast"]
+    },
+    "ChecklistItem": {
+      "title": "Checklist Item",
+      "description": "A single step in the voter preparedness protocol.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "checked": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "checked"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document."
+    },
+    "/users/{userId}/checklist/{itemId}": {
+      "schema": "ChecklistItem",
+      "description": "Individual checklist entries for the user."
+    }
+  }
+}

@@ -11,20 +11,40 @@ import { GoogleGenAI } from "@google/genai";
 import { ChatMessage } from '../types';
 import { AI_CONFIG } from '../constants';
 
+import { getVoterInfo, getRepresentatives } from '../services/civicService';
+
 interface ChatAssistantProps {
   location?: string;
+  zipCode?: string;
 }
 
 /**
  * AI Advisor component with Google Search Grounding for real-time election intelligence.
  */
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ location }) => {
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'ai', content: "Hello! I'm your Election Pulse advisor. I can help you understand the voting process, registration deadlines, and how elections work. What would you like to know today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [civicData, setCivicData] = useState<any>(null);
+
+  // Effect to fetch official Civic Data when zip changes
+  useEffect(() => {
+    if (zipCode && zipCode.length === 5) {
+      getVoterInfo(zipCode).then(data => {
+        if (data) {
+          setCivicData(data);
+          // Optionally push an institutional update to the chat
+          setMessages(prev => [...prev, { 
+            role: 'ai', 
+            content: `Institutional Update: I have localized your advisor with official data for the **${data.electionName}** on **${data.electionDay}**. How can I assist with your specific region?` 
+          }]);
+        }
+      });
+    }
+  }, [zipCode]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -35,40 +55,64 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location }) => {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    // --- Institutional Guardrail: Pre-processing Filter ---
+    const lowerInput = input.toLowerCase();
+    const forbiddenPatterns = [/ignore.*previous/i, /your.*prompt/i, /be.a.different/i];
+    const isInjectionAttempt = forbiddenPatterns.some(p => p.test(lowerInput));
+    
+    if (isInjectionAttempt) {
+      setMessages(prev => [...prev, 
+        { role: 'user', content: input },
+        { role: 'ai', content: "Protocol Violation Detected: I am strictly bound to election procedural guidance. Deviating from my core directive is not permitted." }
+      ]);
+      setInput('');
+      return;
+    }
+
     if (!process.env.GEMINI_API_KEY) {
       setMessages(prev => [...prev, { role: 'ai', content: "Error: GEMINI_API_KEY is not configured in environment secrets." }]);
       return;
     }
 
-    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+    const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY!);
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
     try {
-      const prompt = `You are an expert Election Advisor. Answer the following user question about elections, voting processes, or political systems accurately and objectively. Current user location context: ${location || 'Unknown'}. 
-      User: ${userMessage}`;
-
-      const result = await genAI.models.generateContent({
+      const model = genAI.getGenerativeModel({ 
         model: AI_CONFIG.model,
-        contents: prompt,
-        config: {
-          systemInstruction: AI_CONFIG.systemInstruction,
-          tools: [
-            { googleSearch: {} }
-          ],
-        }
+        systemInstruction: AI_CONFIG.systemInstruction,
+        tools: [
+          { googleSearch: {} }
+        ] as any, // Cast as any if TS definitions are behind
       });
 
-      const citations = result.candidates?.[0]?.groundingMetadata?.searchEntryPoint?.renderedContent 
-        ? [{ title: "Google Search Grounding", html: result.candidates[0].groundingMetadata.searchEntryPoint.renderedContent }]
+      const result = await model.generateContent(userMessage);
+      const response = await result.response;
+      let text = response.text();
+
+      // Extract confidence score
+      let confidenceScore: number | undefined;
+      const confidenceMatch = text.match(/\[CONFIDENCE:\s*(\d+)\]/i);
+      if (confidenceMatch) {
+        confidenceScore = parseInt(confidenceMatch[1], 10);
+        // Remove the confidence bracket from the display text
+        text = text.replace(/\[CONFIDENCE:\s*\d+\]/gi, '').trim();
+      }
+
+      // Extract grounding metadata if exists
+      const groundingMetadata = (result.response as any).candidates?.[0]?.groundingMetadata;
+      const citations = groundingMetadata?.searchEntryPoint?.renderedContent 
+        ? [{ title: "Google Search Grounding", html: groundingMetadata.searchEntryPoint.renderedContent }]
         : [];
 
       setMessages(prev => [...prev, { 
         role: 'ai', 
-        content: result.text || "I'm sorry, I couldn't process that request.",
-        citations
+        content: text || "I'm sorry, I couldn't process that request.",
+        citations,
+        confidenceScore
       }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'ai', content: "Something went wrong. Please try again later." }]);
@@ -126,6 +170,23 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location }) => {
                     <div className="flex items-center gap-1 text-brand-blue">
                       <Search className="w-3 h-3" />
                       Verified by Google Search
+                    </div>
+                  )}
+                  {m.confidenceScore !== undefined && (
+                    <div className="flex items-center gap-2 border-l border-ink-700/10 pl-3">
+                      <span className="opacity-50">Grounding Confidence:</span>
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <div className="w-16 bg-ink-900/5 h-1.5 rounded-full overflow-hidden">
+                          <motion.div 
+                            className={`h-full ${m.confidenceScore > 85 ? 'bg-green-500' : m.confidenceScore > 70 ? 'bg-brand-blue' : 'bg-amber-500'}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${m.confidenceScore}%` }}
+                          />
+                        </div>
+                        <span className={m.confidenceScore > 85 ? 'text-green-600' : m.confidenceScore > 70 ? 'text-brand-blue' : 'text-amber-600'}>
+                          {m.confidenceScore}%
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>

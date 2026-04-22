@@ -9,21 +9,19 @@ import { motion } from 'motion/react';
 import { ChecklistItem } from '../types';
 import { INITIAL_CHECKLIST } from '../constants';
 
+import { useChecklist } from '../hooks/useChecklist';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '../lib/firebase';
+
 /**
  * Personal protocol checklist for voter preparedness.
  */
 const VoterChecklist: React.FC = () => {
-  const [items, setItems] = useState<ChecklistItem[]>(() => {
-    const saved = localStorage.getItem('voter_checklist');
-    return saved ? JSON.parse(saved) : INITIAL_CHECKLIST;
-  });
+  const { items, toggleItem, isSyncing, user, loadingAuth } = useChecklist();
 
-  useEffect(() => {
-    localStorage.setItem('voter_checklist', JSON.stringify(items));
-  }, [items]);
-
-  const toggle = (id: number) => {
-    setItems(items.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
+  const handleSignIn = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch(console.error);
   };
 
   const progress = Math.round((items.filter(i => i.checked).length / items.length) * 100);
@@ -33,7 +31,14 @@ const VoterChecklist: React.FC = () => {
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center justify-between mb-4">
            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Personnel Protocol</h3>
-           <ShieldCheck className="w-4 h-4 text-brand-blue" />
+           {isSyncing ? (
+             <div className="flex items-center gap-2">
+               <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-pulse" />
+               <span className="text-[10px] font-bold text-brand-blue uppercase">Syncing</span>
+             </div>
+           ) : (
+             <ShieldCheck className={`w-4 h-4 ${user ? 'text-green-500' : 'text-slate-500'}`} />
+           )}
         </div>
         <h4 className="text-lg font-bold mb-1">Voter Preparedness</h4>
         <div className="w-full bg-white/10 h-1 rounded-full mt-4 overflow-hidden">
@@ -41,16 +46,27 @@ const VoterChecklist: React.FC = () => {
              className="bg-brand-blue h-full"
              initial={{ width: 0 }}
              animate={{ width: `${progress}%` }}
+             transition={{ duration: 0.8, ease: "easeOut" }}
            />
         </div>
-        <p className="text-[10px] font-bold text-brand-blue mt-2 uppercase tracking-tighter">{progress}% Operational Readiness</p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-[10px] font-bold text-brand-blue uppercase tracking-tighter">{progress}% Operational Readiness</p>
+          {!user && !loadingAuth && (
+            <button 
+              onClick={handleSignIn}
+              className="text-[9px] font-bold text-white/50 hover:text-white uppercase tracking-widest underline transition-colors"
+            >
+              Sign-in to Sync
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="flex-1 p-6 space-y-3 overflow-y-auto custom-scrollbar">
         {items.map(item => (
           <div 
             key={item.id} 
-            onClick={() => toggle(item.id)}
+            onClick={() => toggleItem(item.id)}
             className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 cursor-pointer transition-colors group"
           >
             <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${item.checked ? 'bg-brand-blue border-brand-blue' : 'border-white/20'}`}>

@@ -274,7 +274,10 @@ export default function App() {
                   <span className="text-[10px] font-bold text-ink-700/50 uppercase tracking-widest">Global Session</span>
                 </div>
               </div>
-              <ChatAssistant location={location ? `${location.city}, ${location.state}` : undefined} />
+              <ChatAssistant 
+                location={location ? `${location.city}, ${location.state}` : undefined} 
+                zipCode={zipCode}
+              />
             </div>
           </div>
         </section>
