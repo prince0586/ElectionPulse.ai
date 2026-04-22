@@ -6,10 +6,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import VoterChecklist from '../components/VoterChecklist';
+import VoterChecklist from '../src/components/VoterChecklist';
 
 // Mock the hook to isolate component testing
-vi.mock('../hooks/useChecklist', () => ({
+vi.mock('../src/hooks/useChecklist', () => ({
   useChecklist: () => ({
     items: [
       { id: 1, text: 'Check Registration', checked: true },
@@ -22,8 +22,8 @@ vi.mock('../hooks/useChecklist', () => ({
   })
 }));
 
-// Mock Firebase modules that might be imported
-vi.mock('../lib/firebase', () => ({
+// Mock Firebase modules
+vi.mock('../src/lib/firebase', () => ({
   auth: {},
   db: {}
 }));
@@ -37,7 +37,6 @@ describe('Institutional Integration: Voter Protocols', () => {
 
   it('should display the secure sync indicator for authenticated users', () => {
     render(<VoterChecklist />);
-    // ShieldCheck icon should be present (tested via presence of descriptive text or role if possible)
     expect(screen.getByText(/Personnel Protocol/i)).toBeDefined();
   });
 });

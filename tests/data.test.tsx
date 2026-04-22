@@ -4,11 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import React from 'react';
-import Navbar from '../components/Navbar'; // I'll need to extract Navbar if I can, or just mock it.
-// Actually, I'll test the types or a small utility first if extraction is hard.
-import { TIMELINE_DATA } from '../constants';
+import { TIMELINE_DATA } from '../src/constants';
 
 describe('Voter Intelligence Data', () => {
   it('should have a complete timeline with 6 stages', () => {

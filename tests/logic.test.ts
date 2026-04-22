@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { getGoogleCalendarLink } from '../utils/calendar';
-import { STATE_WAIT_FACTORS } from '../constants';
+import { getGoogleCalendarLink } from '../src/utils/calendar';
+import { STATE_WAIT_FACTORS } from '../src/constants';
 
 describe('Operational Logic Engine', () => {
   describe('Calendar Link Generator', () => {

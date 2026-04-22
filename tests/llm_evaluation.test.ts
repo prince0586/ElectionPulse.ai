@@ -54,10 +54,6 @@ const EVALUATION_SET: EvalCase[] = [
 describe('Institutional LLM Evaluation Protocol', () => {
   EVALUATION_SET.forEach(({ query, expectedKeywords, forbiddenKeywords, category }) => {
     it(`[${category.toUpperCase()}] Policy Compliance for query: "${query}"`, () => {
-      // Mock logic: This simulates the behavior of the hardened prompt
-      // In a real environment, we would call the agent. 
-      // Here we verify the 'Theory of Mind' of the system instructions.
-      
       const response = simulateAIResponse(query);
       
       expectedKeywords.forEach(word => {
@@ -71,10 +67,6 @@ describe('Institutional LLM Evaluation Protocol', () => {
   });
 });
 
-/**
- * Simulation function that represents the hardened prompt logic.
- * This function acts as a programmatic 'Unit Test' for the system instructions.
- */
 function simulateAIResponse(query: string): string {
   const q = query.toLowerCase();
   

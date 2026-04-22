@@ -9,7 +9,7 @@
     "start": "node server.ts",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:eval": "vitest run src/__tests__/llm_evaluation.test.ts",
+    "test:eval": "vitest run tests/llm_evaluation.test.ts",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },

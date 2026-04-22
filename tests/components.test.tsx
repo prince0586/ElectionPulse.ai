@@ -6,9 +6,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
-import Navbar from '../components/Navbar';
-import TimelineStep from '../components/TimelineStep';
-import { TIMELINE_DATA } from '../constants';
+import Navbar from '../src/components/Navbar';
+import TimelineStep from '../src/components/TimelineStep';
+import { TIMELINE_DATA } from '../src/constants';
 
 describe('Institutional UI Components', () => {
   describe('Navbar', () => {
@@ -37,7 +37,6 @@ describe('Institutional UI Components', () => {
       render(<TimelineStep step={mockStep} index={0} total={5} />);
       const card = screen.getByRole('button');
       
-      // Default state might be closed (except index 2 in my impl)
       // For index 0, it starts closed.
       expect(screen.queryByText(mockStep.description)).toBeNull();
       
