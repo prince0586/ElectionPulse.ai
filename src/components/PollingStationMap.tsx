@@ -9,6 +9,7 @@ import { motion } from 'motion/react';
 
 interface PollingStationMapProps {
   location: { city: string, state: string } | null;
+  civicData?: any;
 }
 
 /**
@@ -52,9 +53,14 @@ const PollingStationMap: React.FC<PollingStationMapProps> = ({ location }) => {
            </div>
            <h4 className="text-sm font-bold text-ink-900 mb-1">{location.city} Regional Hub</h4>
            <p className="text-[10px] text-ink-700/50 max-w-[200px]">3 Estimated Polling Clusters identified in your vicinity.</p>
-           <button className="mt-4 px-4 py-2 bg-brand-blue text-white text-[10px] font-bold uppercase tracking-widest rounded shadow-lg hover:shadow-brand-blue/20 transition-all active:scale-95">
+           <a 
+             href={`https://www.google.com/maps/search/polling+stations+near+${location.city}+${location.state}`}
+             target="_blank"
+             rel="noopener noreferrer"
+             className="mt-4 px-4 py-2 bg-brand-blue text-white text-[10px] font-bold uppercase tracking-widest rounded shadow-lg hover:shadow-brand-blue/20 transition-all active:scale-95 inline-block"
+           >
               Activate Precision Map
-           </button>
+           </a>
         </div>
         
         {/* Floating marker simulation */}

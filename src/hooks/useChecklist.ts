@@ -15,7 +15,7 @@ import {
   orderBy 
 } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, db } from '../lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { ChecklistItem } from '../types';
 import { INITIAL_CHECKLIST } from '../constants';
 
@@ -38,6 +38,7 @@ export const useChecklist = () => {
     }
 
     setIsSyncing(true);
+    const path = `users/${user.uid}/checklist`;
     const checklistRef = collection(db, 'users', user.uid, 'checklist');
     const q = query(checklistRef, orderBy('updatedAt', 'asc'));
 
@@ -46,10 +47,14 @@ export const useChecklist = () => {
         // Bootstrap the remote checklist from initial data if empty
         INITIAL_CHECKLIST.forEach(async (item) => {
           const itemRef = doc(db, 'users', user.uid, 'checklist', String(item.id));
-          await setDoc(itemRef, {
-            ...item,
-            updatedAt: serverTimestamp()
-          });
+          try {
+            await setDoc(itemRef, {
+              ...item,
+              updatedAt: serverTimestamp()
+            });
+          } catch (e) {
+            handleFirestoreError(e, OperationType.WRITE, `${path}/${item.id}`);
+          }
         });
       } else {
         const fetchedItems = snapshot.docs.map(doc => ({
@@ -61,7 +66,7 @@ export const useChecklist = () => {
       }
       setIsSyncing(false);
     }, (error) => {
-      console.error("Firestore Checklist Sync Error:", error);
+      handleFirestoreError(error, OperationType.GET, path);
       setIsSyncing(false);
     });
 
@@ -78,11 +83,16 @@ export const useChecklist = () => {
     setItems(items.map(i => i.id === id ? { ...i, checked: newChecked } : i));
 
     if (user) {
+      const path = `users/${user.uid}/checklist/${id}`;
       const itemRef = doc(db, 'users', user.uid, 'checklist', String(id));
-      await updateDoc(itemRef, {
-        checked: newChecked,
-        updatedAt: serverTimestamp()
-      });
+      try {
+        await updateDoc(itemRef, {
+          checked: newChecked,
+          updatedAt: serverTimestamp()
+        });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, path);
+      }
     } else {
       // Save to localStorage for non-auth users
       const updated = items.map(i => i.id === id ? { ...i, checked: newChecked } : i);

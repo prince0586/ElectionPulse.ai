@@ -8,6 +8,7 @@ import { ShieldCheck, CheckCircle2, Download, Calendar } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ChecklistItem } from '../types';
 import { INITIAL_CHECKLIST } from '../constants';
+import { getGoogleCalendarLink } from '../utils/calendar';
 
 import { useChecklist } from '../hooks/useChecklist';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -84,7 +85,13 @@ const VoterChecklist: React.FC = () => {
         <button className="flex-1 py-3 px-4 bg-brand-blue text-white rounded-xl text-[11px] font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-2.5 hover:translate-y-[-2px] transition-all shadow-lg active:scale-95">
           <Download className="w-3.5 h-3.5" /> Export
         </button>
-        <button className="flex-1 py-3 px-4 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-2.5 hover:bg-white/5 transition-all text-white active:scale-95">
+        <button 
+          onClick={() => {
+            const link = getGoogleCalendarLink('Voter Registration Renewal', 'Month -1', 'Ensure your registration is still active and correct.');
+            window.open(link, '_blank');
+          }}
+          className="flex-1 py-3 px-4 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-2.5 hover:bg-white/5 transition-all text-white active:scale-95"
+        >
           <Calendar className="w-3.5 h-3.5" /> Reminders
         </button>
       </div>

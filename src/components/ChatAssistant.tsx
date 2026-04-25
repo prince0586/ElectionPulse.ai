@@ -75,24 +75,25 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
       return;
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
       setMessages(prev => [...prev, { role: 'ai', content: "Error: GEMINI_API_KEY is not configured in environment secrets." }]);
       return;
     }
 
-    const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY!);
+    const genAI = new GoogleGenAI(apiKey);
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
     try {
-      const model = genAI.getGenerativeModel({ 
+      const model = (genAI as any).getGenerativeModel({ 
         model: AI_CONFIG.model,
         systemInstruction: AI_CONFIG.systemInstruction,
         tools: [
           { googleSearch: {} }
-        ] as any, // Cast as any if TS definitions are behind
+        ],
       });
 
       const result = await model.generateContent(userMessage);

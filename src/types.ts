@@ -37,6 +37,39 @@ export interface ChatMessage {
 export interface LocationData {
   city: string;
   state: string;
+  zipCode?: string;
+}
+
+export interface GoogleCalendarEvent {
+  text: string;
+  dates: string;
+  details: string;
+  location: string;
+}
+
+export interface CivicPollingLocation {
+  address: {
+    locationName?: string;
+    line1: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
+  pollingHours?: string;
+  notes?: string;
+}
+
+export interface CivicContest {
+  type: string;
+  office?: string;
+  district?: {
+    name: string;
+    scope: string;
+  };
+  candidates?: Array<{
+    name: string;
+    party: string;
+  }>;
 }
 
 export interface ChecklistItem {

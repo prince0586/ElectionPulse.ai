@@ -1,6 +1,6 @@
 {
   "name": "Election Pulse.ai",
   "description": "Institutional-grade election intelligence platform featuring grounded AI advisors, persistent Firestore voter protocols, and real-time localized metrics.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": []
 }

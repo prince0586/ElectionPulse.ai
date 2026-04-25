@@ -11,13 +11,14 @@ import { STATE_WAIT_FACTORS } from '../constants';
 
 interface LocalMetricsProps {
   location: LocationData;
+  civicData?: any;
 }
 
 /**
  * Predictive wait-time and procedural risk module.
  * Enhances problem alignment by providing data-driven voter advice.
  */
-const LocalMetrics: React.FC<LocalMetricsProps> = ({ location }) => {
+const LocalMetrics: React.FC<LocalMetricsProps> = ({ location, civicData }) => {
   const [waitEstimate, setWaitEstimate] = useState(15);
   
   useEffect(() => {
@@ -25,6 +26,8 @@ const LocalMetrics: React.FC<LocalMetricsProps> = ({ location }) => {
     const base = location.city.length % 2 === 0 ? 10 : 20;
     setWaitEstimate(Math.round(base * factor));
   }, [location]);
+
+  const pollingStationCount = civicData?.pollingLocations?.length || 0;
 
   return (
     <motion.div 
@@ -41,6 +44,11 @@ const LocalMetrics: React.FC<LocalMetricsProps> = ({ location }) => {
             <span className="text-xl font-black text-white">{waitEstimate}</span>
             <span className="text-[10px] font-bold text-slate-500 uppercase">Minutes</span>
          </div>
+         {pollingStationCount > 0 && (
+           <p className="text-[8px] text-brand-blue mt-1 uppercase font-bold tracking-tighter">
+             Verified {pollingStationCount} Stations via Google Civic
+           </p>
+         )}
          <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
             <motion.div 
               className={`h-full ${waitEstimate > 25 ? 'bg-amber-500' : 'bg-green-500'}`}

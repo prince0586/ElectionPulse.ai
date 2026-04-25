@@ -14,13 +14,27 @@ describe('Institutional UI Components', () => {
   describe('Navbar', () => {
     it('should render with standard branding', () => {
       const toggle = vi.fn();
-      render(<Navbar isHighContrast={false} toggleContrast={toggle} />);
+      render(
+        <Navbar 
+          isHighContrast={false} 
+          toggleContrast={toggle} 
+          currentTheme="minimal" 
+          setTheme={vi.fn()} 
+        />
+      );
       expect(screen.getByText(/ElectionPulse.ai/i)).toBeDefined();
     });
 
     it('should show Contrast button', () => {
       const toggle = vi.fn();
-      render(<Navbar isHighContrast={false} toggleContrast={toggle} />);
+      render(
+        <Navbar 
+          isHighContrast={false} 
+          toggleContrast={toggle} 
+          currentTheme="minimal" 
+          setTheme={vi.fn()} 
+        />
+      );
       expect(screen.getByText(/Contrast/i)).toBeDefined();
     });
   });
