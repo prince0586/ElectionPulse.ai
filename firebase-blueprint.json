@@ -33,5 +33,19 @@
       "schema": "ChecklistItem",
       "description": "Individual checklist entries for the user."
     }
+  },
+  "infrastructure": {
+    "region": "us-west1",
+    "cloudRun": {
+      "memory": "512Mi",
+      "cpu": "1",
+      "concurrency": 80,
+      "timeout": 300
+    },
+    "firestore": {
+      "edition": "enterprise",
+      "deletionPolicy": "protected",
+      "pointInTimeRecovery": "enabled"
+    }
   }
 }

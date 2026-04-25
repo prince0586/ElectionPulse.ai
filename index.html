@@ -1,13 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <meta name="description" content="Election Pulse AI: Institutional-grade election intelligence and voter protocol advisor." />
+    <meta name="theme-color" content="#2563eb" />
+    
+    <title>Election Pulse AI | Institutional Civic Intelligence</title>
+    
+    <!-- Preload critical fonts or assets here if any -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    
+    <!-- Standardized script loading for performance -->
+    <script type="module" src="/src/main.tsx" defer></script>
   </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body class="antialiased text-ink-900 bg-surface-50">
+    <noscript>
+      <div style="padding: 2rem; text-align: center; background: #fee2e2; color: #991b1b;">
+        Election Pulse AI requires JavaScript to be enabled for institutional intelligence processing.
+      </div>
+    </noscript>
+    
+    <div id="root" role="application" aria-label="Election Pulse Main Interface"></div>
   </body>
 </html>
 

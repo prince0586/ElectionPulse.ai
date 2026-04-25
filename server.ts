@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import fs from "fs";
 import helmet from "helmet";
@@ -10,16 +10,52 @@ import { createServer as createViteServer } from "vite";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// --- Interfaces & Types ---
+interface HealthResponse {
+  status: "ok" | "error";
+  timestamp: string;
+  uptime: number;
+}
+
+interface CacheStore<T> {
+  [key: string]: {
+    data: T;
+    expiry: number;
+  };
+}
+
+// --- Global Constants ---
+const PORT = 3000;
+const CACHE_TTL = 300000; // 5 minutes
+
+// --- Utilities ---
+const cache: CacheStore<unknown> = {};
+
+/**
+ * Standardized response trimmer for institutional data.
+ */
+function trimPayload<T extends object>(data: T, allowedKeys: (keyof T)[]): Partial<T> {
+  const trimmed: Partial<T> = {};
+  allowedKeys.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      trimmed[key] = data[key];
+    }
+  });
+  return trimmed;
+}
+
 async function startServer() {
   const app = express();
-  const PORT = 3000;
 
   // Security & Efficiency Middleware
-  app.use(helmet({
-    contentSecurityPolicy: false, // Disabled for Vite dev server compatibility
-  }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+    })
+  );
   app.use(compression());
-  
+  app.use(express.json());
+
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -28,37 +64,85 @@ async function startServer() {
   });
   app.use("/api/", limiter);
 
-  // API routes
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  // --- API Routes ---
+
+  app.get("/api/health", (req: Request, res: Response<HealthResponse>) => {
+    try {
+      res.status(200).json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      });
+    } catch (error) {
+      console.error("[Institutional Error] Health check failure:", error);
+      res.status(500).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      });
+    }
   });
+
+  // Example of a cached, trimmed API route
+  app.get("/api/stats", async (req: Request, res: Response) => {
+    const cacheKey = "global_stats";
+    const now = Date.now();
+
+    if (cache[cacheKey] && cache[cacheKey].expiry > now) {
+      return res.json(cache[cacheKey].data);
+    }
+
+    try {
+      // Simulate external fetch
+      const rawData = {
+        voters: 244500000,
+        turnout: 0.66,
+        lastUpdated: new Date().toISOString(),
+        internalMetadata: "sensitive_data_to_be_trimmed",
+      };
+
+      const trimmedData = trimPayload(rawData, ["voters", "turnout", "lastUpdated"]);
+
+      cache[cacheKey] = {
+        data: trimmedData,
+        expiry: now + CACHE_TTL,
+      };
+
+      res.status(200).json(trimmedData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to retrieve statistics" });
+    }
+  });
+
+  // --- Static Asset Serving ---
 
   const distPath = path.resolve(__dirname, "dist");
   const hasDist = fs.existsSync(distPath);
-  
-  console.log(`[Institutional Log] Server starting. NODE_ENV: ${process.env.NODE_ENV}, Dist exists: ${hasDist}, Path: ${distPath}`);
 
   if (process.env.NODE_ENV !== "production") {
-    console.log("[Institutional Log] Entering Development Mode via Vite Middleware.");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    console.log("[Institutional Log] Entering Production Mode. Serving static assets.");
-    if (!hasDist) {
-      console.error("[CRITICAL ERROR] Dist directory missing. Run 'npm run build' before starting.");
-    }
     app.use(express.static(distPath, { index: false }));
-    app.get("*", (req, res) => {
+    app.get("*", (req: Request, res: Response) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
+  // Final Error Handler
+  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error(`[Institutional Critical] Unhandled exception: ${err.message}`);
+    res.status(500).send("Internal Server Error");
+  });
+
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`[Institutional Log] Service operational on http://0.0.0.0:${PORT}`);
   });
 }
 
-startServer();
+startServer().catch((error) => {
+  console.error("[Institutional Critical] Server failed to start:", error);
+});

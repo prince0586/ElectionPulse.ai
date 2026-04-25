@@ -1,12 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Global Safety Net
+    // 0. Global Safety Net - Default Deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Helpers ---
+    // --- Core Identity Primitives (The Master Gate) ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -27,10 +27,11 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // --- Entity Validations ---
+    // --- Entity Validation Blueprints (The Anti-Update-Gap) ---
     
     function isValidUser(data) {
-      return data.size() == 4 &&
+      return data.keys().hasAll(['zipCode', 'isHighContrast', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 4 &&
              data.zipCode is string && data.zipCode.size() == 5 &&
              data.isHighContrast is bool &&
              data.createdAt is timestamp &&
@@ -38,29 +39,46 @@ service cloud.firestore {
     }
 
     function isValidChecklistItem(data) {
-      return data.size() == 3 &&
-             data.text is string && data.text.size() <= 200 &&
+      return data.keys().hasAll(['text', 'checked', 'updatedAt']) &&
+             data.keys().size() == 3 &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 200 &&
              data.checked is bool &&
              data.updatedAt is timestamp;
     }
 
-    // --- Match Rules ---
+    // --- Resource Matches ---
 
     match /users/{userId} {
+      // Identity Integrity: Users can only read their own profile
       allow get: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().createdAt == request.time;
-      allow update: if isOwner(userId) && isValidUser(incoming()) && 
-                    incoming().updatedAt == request.time &&
-                    incoming().createdAt == existing().createdAt &&
-                    (incoming().diff(existing()).affectedKeys().hasOnly(['zipCode', 'isHighContrast', 'updatedAt']));
+      
+      // Strict Keys & Partial Updates Enforced
+      allow create: if isOwner(userId) && 
+                      isValidUser(incoming()) && 
+                      incoming().createdAt == request.time;
+                      
+      allow update: if isOwner(userId) && 
+                      isValidUser(incoming()) && 
+                      incoming().updatedAt == request.time &&
+                      incoming().createdAt == existing().createdAt &&
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['zipCode', 'isHighContrast', 'updatedAt']));
     }
 
     match /users/{userId}/checklist/{itemId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidId(itemId) && isValidChecklistItem(incoming());
-      allow update: if isOwner(userId) && isValidChecklistItem(incoming()) &&
-                    incoming().updatedAt == request.time &&
-                    (incoming().diff(existing()).affectedKeys().hasOnly(['checked', 'updatedAt']));
+      // Secure List Queries: Enforce owner constraint on collection level
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      
+      allow create: if isOwner(userId) && 
+                      isValidId(itemId) && 
+                      isValidChecklistItem(incoming()) &&
+                      incoming().updatedAt == request.time;
+                      
+      allow update: if isOwner(userId) && 
+                      isValidChecklistItem(incoming()) &&
+                      incoming().updatedAt == request.time &&
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['checked', 'updatedAt']));
+                      
       allow delete: if isOwner(userId);
     }
   }
