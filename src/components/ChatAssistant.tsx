@@ -29,20 +29,26 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [civicData, setCivicData] = useState<any>(null);
+  const [civicError, setCivicError] = useState<string | null>(null);
 
   // Effect to fetch official Civic Data when zip changes
   useEffect(() => {
     if (zipCode && zipCode.length === 5) {
-      getVoterInfo(zipCode).then(data => {
-        if (data) {
-          setCivicData(data);
-          // Optionally push an institutional update to the chat
-          setMessages(prev => [...prev, { 
-            role: 'ai', 
-            content: `Institutional Update: I have localized your advisor with official data for the **${data.electionName}** on **${data.electionDay}**. How can I assist with your specific region?` 
-          }]);
-        }
-      });
+      setCivicError(null);
+      getVoterInfo(zipCode)
+        .then(data => {
+          if (data) {
+            setCivicData(data);
+            setMessages(prev => [...prev, { 
+              role: 'ai', 
+              content: `Institutional Update: I have localized your advisor with official data for the **${data.electionName}** on **${data.electionDay}**. How can I assist with your specific region?` 
+            }]);
+          }
+        })
+        .catch(err => {
+          console.error("ChatAssistant: Civic Sync Error", err);
+          setCivicError(err.message || "Localized verification failed.");
+        });
     }
   }, [zipCode]);
 
@@ -122,8 +128,8 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
   };
 
   return (
-    <div id="advisor-chat-container" className="pro-card flex flex-col h-[600px] overflow-hidden p-0" role="region" aria-label="AI Election Advisor Chat">
-      <div id="advisor-header" className="bg-ink-900 p-4 text-white flex items-center justify-between">
+    <div id="advisor-chat-container" className="pro-card flex flex-col h-[500px] sm:h-[600px] overflow-hidden p-0" role="region" aria-label="AI Election Advisor Chat">
+      <div id="advisor-header" className="bg-ink-900 p-4 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-white/10 p-2 rounded-lg">
             <Globe className="w-5 h-5 text-brand-blue" />
@@ -135,13 +141,15 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
             </p>
           </div>
         </div>
-        <div className="px-3 py-1 bg-brand-blue/20 border border-brand-blue/30 rounded flex items-center gap-2">
-          <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-pulse" />
-          <span className="text-[10px] uppercase font-bold tracking-widest text-brand-blue">Google Cloud Sync</span>
+        <div className={`px-3 py-1 ${civicError ? 'bg-red-500/20 border-red-500/30 text-red-500' : 'bg-brand-blue/20 border-brand-blue/30 text-brand-blue'} border rounded flex items-center gap-2`}>
+          <div className={`w-1.5 h-1.5 ${civicError ? 'bg-red-500' : 'bg-brand-blue'} rounded-full animate-pulse`} />
+          <span className="text-[10px] uppercase font-bold tracking-widest">
+            {civicError ? 'Verification Restricted' : 'Google Cloud Sync'}
+          </span>
         </div>
       </div>
       
-      <div id="advisor-chat-history" ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-surface-50 custom-scrollbar" aria-live="polite">
+      <div id="advisor-chat-history" ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-surface-50 custom-scrollbar" aria-live="polite">
         {messages.map((m, i) => (
           <motion.div 
             key={i}
@@ -149,7 +157,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
             animate={{ opacity: 1, y: 0 }}
             className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
           >
-            <div className={`max-w-[85%] p-4 rounded-xl shadow-sm ${
+            <div className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 rounded-xl shadow-sm ${
               m.role === 'user' 
                 ? 'bg-brand-blue text-white rounded-tr-none' 
                 : 'bg-white text-ink-800 rounded-tl-none border border-surface-200'

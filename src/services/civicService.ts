@@ -29,7 +29,9 @@ export async function getVoterInfo(address: string): Promise<CivicElectionData |
     );
     
     if (!response.ok) {
-      throw new Error(`Civic API failure: ${response.statusText}`);
+      const errorBody = await response.json().catch(() => ({}));
+      const message = errorBody.error?.message || response.statusText || `HTTP ${response.status}`;
+      throw new Error(`Civic API failure: ${message}`);
     }
 
     const data = await response.json();
@@ -42,7 +44,7 @@ export async function getVoterInfo(address: string): Promise<CivicElectionData |
     };
   } catch (error) {
     console.error("Civic API Integration Error:", error);
-    return null;
+    throw error; // Re-throw so the UI can handle the error state
   }
 }
 

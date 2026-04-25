@@ -30,7 +30,7 @@ const LocalMetrics: React.FC<LocalMetricsProps> = ({ location }) => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-2 gap-4"
+      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
     >
       <div className="bg-white/5 border border-white/10 rounded-xl p-4">
          <div className="flex items-center gap-2 mb-2">

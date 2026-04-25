@@ -54,7 +54,7 @@ const TimelineStep: React.FC<TimelineStepProps> = ({ step, index, total }) => {
         <div className="flex items-center justify-between">
           <div>
             <span className={`text-[10px] font-bold uppercase tracking-wider ${step.status === 'Active' ? 'text-brand-blue' : 'text-slate-400'}`}>Stage 0{index + 1} • {step.date}</span>
-            <h4 className="text-lg font-bold text-ink-800 mt-1">{step.title}</h4>
+            <h4 className="text-base sm:text-lg font-bold text-ink-800 mt-1">{step.title}</h4>
           </div>
           <div className="text-ink-700/30 flex items-center gap-2">
              <a 
@@ -83,17 +83,17 @@ const TimelineStep: React.FC<TimelineStepProps> = ({ step, index, total }) => {
                 <p className="text-ink-700/70 text-sm leading-relaxed text-xs">
                   {step.description}
                 </p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <button className="text-[9px] font-bold uppercase tracking-widest bg-ink-900 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-brand-blue transition-colors">
+                <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
+                  <button className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest bg-ink-900 text-white px-3 sm:px-4 py-2 rounded-md flex items-center gap-2 hover:bg-brand-blue transition-colors">
                     Access Official Protocol <ExternalLink className="w-3 h-3" />
                   </button>
                   <a 
                     href={calendarLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[9px] font-bold uppercase tracking-widest bg-surface-100 text-ink-700 px-4 py-2 rounded-md flex items-center gap-2 hover:bg-surface-200 transition-colors"
+                    className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest bg-surface-100 text-ink-700 px-3 sm:px-4 py-2 rounded-md flex items-center gap-2 hover:bg-surface-200 transition-colors"
                   >
-                    Sync to Google Calendar
+                    Sync to Google
                   </a>
                 </div>
               </div>

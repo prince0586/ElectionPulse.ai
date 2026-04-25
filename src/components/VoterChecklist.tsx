@@ -27,34 +27,35 @@ const VoterChecklist: React.FC = () => {
   const progress = Math.round((items.filter(i => i.checked).length / items.length) * 100);
 
   return (
-    <div className="pro-card bg-ink-900 border-none text-white overflow-hidden flex flex-col h-full shadow-2xl">
-      <div className="p-6 border-b border-white/5">
-        <div className="flex items-center justify-between mb-4">
-           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Personnel Protocol</h3>
+    <div className="pro-card bg-ink-900 border-none text-white overflow-hidden flex flex-col h-full shadow-[0_20px_50px_rgba(2,6,23,0.4)] relative border border-white/5">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+      <div className="p-6 sm:p-8 border-b border-white/5 relative z-10">
+        <div className="flex items-center justify-between mb-6">
+           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Personnel Protocol</h3>
            {isSyncing ? (
-             <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-pulse" />
-               <span className="text-[10px] font-bold text-brand-blue uppercase">Syncing</span>
+             <div className="flex items-center gap-2.5">
+               <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+               <span className="text-[10px] font-bold text-brand-blue uppercase tracking-tight">Syncing</span>
              </div>
            ) : (
-             <ShieldCheck className={`w-4 h-4 ${user ? 'text-green-500' : 'text-slate-500'}`} />
+             <ShieldCheck className={`w-5 h-5 ${user ? 'text-green-500' : 'text-white/20'}`} />
            )}
         </div>
-        <h4 className="text-lg font-bold mb-1">Voter Preparedness</h4>
-        <div className="w-full bg-white/10 h-1 rounded-full mt-4 overflow-hidden">
+        <h4 className="text-xl font-display font-bold mb-1 tracking-tight text-white">Voter Readiness</h4>
+        <div className="w-full bg-white/5 h-1.5 rounded-full mt-6 overflow-hidden">
            <motion.div 
-             className="bg-brand-blue h-full"
+             className="bg-brand-blue h-full shadow-[0_0_12px_rgba(59,130,246,0.3)]"
              initial={{ width: 0 }}
              animate={{ width: `${progress}%` }}
-             transition={{ duration: 0.8, ease: "easeOut" }}
+             transition={{ duration: 1, ease: "circOut" }}
            />
         </div>
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-[10px] font-bold text-brand-blue uppercase tracking-tighter">{progress}% Operational Readiness</p>
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-[11px] font-bold text-brand-blue uppercase tracking-widest">{progress}% Readiness</p>
           {!user && !loadingAuth && (
             <button 
               onClick={handleSignIn}
-              className="text-[9px] font-bold text-white/50 hover:text-white uppercase tracking-widest underline transition-colors"
+              className="text-[10px] font-bold text-white/30 hover:text-white uppercase tracking-[0.1em] underline underline-offset-4 transition-all"
             >
               Sign-in to Sync
             </button>
@@ -62,29 +63,29 @@ const VoterChecklist: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex-1 p-6 space-y-3 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto custom-scrollbar relative z-10">
         {items.map(item => (
           <div 
             key={item.id} 
             onClick={() => toggleItem(item.id)}
-            className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 cursor-pointer transition-colors group"
+            className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/5 cursor-pointer transition-all duration-300 group hover:translate-x-1"
           >
-            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${item.checked ? 'bg-brand-blue border-brand-blue' : 'border-white/20'}`}>
-              {item.checked && <CheckCircle2 className="w-3 h-3 text-white" />}
+            <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all duration-300 ${item.checked ? 'bg-brand-blue border-brand-blue rotate-12 scale-110 shadow-lg' : 'border-white/10 group-hover:border-white/30'}`}>
+              {item.checked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
             </div>
-            <span className={`text-xs font-medium transition-all ${item.checked ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
+            <span className={`text-[13px] font-semibold transition-all duration-300 ${item.checked ? 'text-white/30 line-through' : 'text-white/80'}`}>
               {item.text}
             </span>
           </div>
         ))}
       </div>
       
-      <div className="p-6 bg-white/5 border-t border-white/5 flex gap-2">
-        <button className="flex-1 py-2 bg-brand-blue text-white rounded text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-blue/80 transition-colors">
-          <Download className="w-3 h-3" /> Export Report
+      <div className="p-6 sm:p-8 bg-black/20 border-t border-white/5 flex gap-3 relative z-10">
+        <button className="flex-1 py-3 px-4 bg-brand-blue text-white rounded-xl text-[11px] font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-2.5 hover:translate-y-[-2px] transition-all shadow-lg active:scale-95">
+          <Download className="w-3.5 h-3.5" /> Export
         </button>
-        <button className="flex-1 py-2 border border-white/20 rounded text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-colors text-white">
-          <Calendar className="w-3 h-3" /> Reminders
+        <button className="flex-1 py-3 px-4 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-2.5 hover:bg-white/5 transition-all text-white active:scale-95">
+          <Calendar className="w-3.5 h-3.5" /> Reminders
         </button>
       </div>
     </div>

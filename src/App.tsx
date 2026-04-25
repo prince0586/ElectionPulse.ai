@@ -76,12 +76,25 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: bool
   }
 }
 
+import { ThemeType, THEMES } from './constants.tsx';
+
 export default function App() {
   const [zipCode, setZipCode] = useState('');
   const [location, setLocation] = useState<LocationData | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isHighContrast, setIsHighContrast] = useState(false);
+  const [theme, setTheme] = useState<ThemeType>('minimal');
   const [dailyTip, setDailyTip] = useState("Research local ballot measures to understand community impact.");
+
+  // Apply theme-specific typography and variables to document
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('theme-institutional', 'theme-brutalist', 'theme-minimal', 'theme-editorial');
+    root.classList.add(`theme-${theme}`);
+    
+    // Smooth transition trigger
+    root.style.setProperty('--theme-transition', '0.5s');
+  }, [theme]);
 
   // Logic to fetch a 'Pro-Tip' from Gemini or a static pool for alignment
   useEffect(() => {
@@ -123,55 +136,66 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className={`min-h-screen transition-colors duration-300 ${isHighContrast ? 'bg-neutral-900 font-sans' : 'bg-surface-50 font-sans'}`}>
-        <Navbar isHighContrast={isHighContrast} toggleContrast={() => setIsHighContrast(!isHighContrast)} />
+      <div className={`min-h-screen transition-all duration-500 overflow-x-hidden ${isHighContrast ? 'bg-neutral-900 high-contrast' : 'bg-surface-50 font-sans'}`}>
+        <Navbar 
+          isHighContrast={isHighContrast} 
+          toggleContrast={() => setIsHighContrast(!isHighContrast)} 
+          currentTheme={theme}
+          setTheme={setTheme}
+        />
 
-      <main className="pt-24 min-h-screen max-w-7xl mx-auto p-6 flex flex-col gap-8">
+      <main className="pt-20 sm:pt-24 min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 flex flex-col gap-8 sm:gap-10">
+
         {/* --- Hero Section: Status Overview --- */}
-        <section id="hero-section" className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-            <div className="pro-card p-10 relative overflow-hidden bg-white border-brand-blue/10" role="banner">
-              <div className="absolute top-0 right-0 p-8 opacity-5 text-brand-blue pointer-events-none">
-                 <Vote size={180} aria-hidden="true" />
+        <section id="hero-section" className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8">
+          <div className="lg:col-span-8 flex flex-col gap-6 sm:gap-8">
+            <div className="pro-card p-5 sm:p-8 md:p-12 relative overflow-hidden bg-white border-brand-blue/5" role="banner">
+              <div className="absolute -top-12 -right-12 p-12 opacity-5 text-brand-blue pointer-events-none transform rotate-12">
+                 <Vote size={240} aria-hidden="true" />
               </div>
               
-              <div className="max-w-xl relative z-10">
-                <div className="flex items-center gap-4 mb-3">
-                  <span className="px-2 py-1 bg-brand-blue/10 text-brand-blue text-[10px] font-bold rounded uppercase tracking-wider">Strategic Initiative</span>
-                  <div className="flex items-center gap-2 px-2 py-1 bg-green-500/10 text-green-700 text-[10px] font-bold rounded uppercase tracking-wider ring-1 ring-green-500/20">
-                    <ShieldCheck className="w-3 h-3" /> Grounded Intelligence 3.1
+              <div className="max-w-2xl relative z-10">
+                <div className="flex flex-wrap items-center gap-4 mb-6">
+                  <span className="px-3 py-1 bg-ink-900 text-white text-[10px] font-bold rounded-full uppercase tracking-[0.15em]">Strategic Initiative</span>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-700 text-[10px] font-bold rounded-full uppercase tracking-[0.1em] ring-1 ring-green-500/20">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Grounded Intelligence 4.0
                   </div>
                 </div>
-                <p className="text-ink-700/70 text-base leading-relaxed mb-8">
-                  Voter participation is the core metric of clinical democracy. Election Pulse AI provides the analytical framework and procedural guidance needed for informed civic engagement.
+                
+                <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold leading-[1.1] sm:leading-[0.95] mb-6 tracking-tight text-ink-900">
+                  Clinical <span className="text-brand-blue">Civic</span> Integration.
+                </h1>
+                
+                <p className="text-ink-700/70 text-base sm:text-lg leading-relaxed mb-8 sm:mb-10 max-w-lg">
+                  Voter participation is the core pulse of democracy. We provide the analytical framework and procedural architecture needed for high-fidelity engagement.
                 </p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 rounded-lg bg-surface-50 border border-surface-100 shadow-inner">
-                    <h4 className="text-xs font-bold text-ink-900 uppercase tracking-widest mb-3">Key Performance</h4>
-                    <ul className="text-xs text-ink-700/60 space-y-2 font-medium">
-                      <li className="flex items-center gap-2">
-                        <div className="w-1 h-1 bg-brand-blue rounded-full" aria-hidden="true" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-10">
+                  <div className="p-5 sm:p-6 rounded-2xl bg-surface-100 border border-surface-200/50">
+                    <h4 className="text-[10px] sm:text-[11px] font-bold text-ink-700 uppercase tracking-[0.2em] mb-4">Metric Focus</h4>
+                    <ul className="text-xs text-ink-800 space-y-3 font-semibold">
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-brand-blue rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                         Grounded Search Response
                       </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1 h-1 bg-brand-blue rounded-full" aria-hidden="true" />
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-brand-blue rounded-full" />
                         Institutional Citations
                       </li>
                     </ul>
                   </div>
-                  <div className="p-4 rounded-lg bg-surface-50 border border-surface-100 shadow-inner">
-                    <h4 className="text-xs font-bold text-ink-900 uppercase tracking-widest mb-3">Next Milestone</h4>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-brand-blue">142</span>
-                      <span className="text-[10px] font-bold text-ink-700/40 uppercase">Days to Nov 5</span>
+                  <div className="p-5 sm:p-6 rounded-2xl bg-surface-100 border border-surface-200/50">
+                    <h4 className="text-[10px] sm:text-[11px] font-bold text-ink-700 uppercase tracking-[0.2em] mb-4">Next Milestone</h4>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-3xl sm:text-4xl font-display font-black text-ink-900">142</span>
+                      <span className="text-[10px] sm:text-[11px] font-bold text-ink-700/50 uppercase tracking-widest">Days to Cycle</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-8 pt-8 border-t border-surface-100 flex flex-col sm:flex-row items-center gap-4">
-                   <div className="relative flex-1 group">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-700/40 group-focus-within:text-brand-blue transition-colors" />
+                <div className="pt-8 border-t border-surface-100 flex flex-col sm:flex-row items-center gap-5">
+                   <div className="relative flex-1 group w-full">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-700/30 group-focus-within:text-brand-blue transition-colors" />
                       <input 
                         type="text" 
                         maxLength={5}
@@ -180,44 +204,44 @@ export default function App() {
                           setZipCode(e.target.value.replace(/\D/g, ''));
                           if (e.target.value.length === 5) fetchLocation(e.target.value);
                         }}
-                        placeholder="Enter Zip for Localized Pulse..."
-                        className="w-full bg-surface-50 border border-surface-200 py-3 pl-10 pr-4 rounded-lg outline-none focus:border-brand-blue/30 text-xs font-medium placeholder:text-ink-700/30"
+                        placeholder="Enter location code for localized sync..."
+                        className="w-full bg-surface-50 border border-surface-200 py-4 pl-12 pr-4 rounded-xl outline-none focus:border-brand-blue/30 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.05)] text-sm font-medium placeholder:text-ink-700/30 transition-all"
                         aria-label="Localization Zip Code"
                       />
-                      {isLocating && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 animate-spin text-brand-blue" />}
+                      {isLocating && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-brand-blue" />}
                    </div>
                    {location && (
                       <motion.div 
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-2 bg-brand-blue/5 border border-brand-blue/10 px-4 py-3 rounded-lg"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-3 bg-ink-900 text-white px-5 py-4 rounded-xl border border-white/10 shadow-lg w-full sm:w-auto"
                       >
-                         <div className="w-1.5 h-1.5 bg-brand-blue rounded-full" />
-                         <span className="text-[10px] font-bold text-brand-blue uppercase tracking-widest">{location.city}, {location.state} Verified</span>
+                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+                         <span className="text-[11px] font-bold uppercase tracking-[0.1em]">{location.city} Protocol Verified</span>
                       </motion.div>
                    )}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 { title: 'Identity Verification', icon: <UserPlus className="w-5 h-5" />, desc: 'Confirm state-specific eligibility' },
                 { title: 'Ballot Intelligence', icon: <History className="w-5 h-5" />, desc: 'Review historical candidate data' },
                 { title: 'Secure Logistics', icon: <MapPin className="w-5 h-5" />, desc: 'Locate certified polling stations' }
               ].map((card, i) => (
-                <div key={i} className="pro-card flex flex-col items-start hover:border-brand-blue/30 cursor-pointer">
-                  <div className="w-10 h-10 bg-surface-100 rounded-lg flex items-center justify-center mb-4 text-brand-blue transition-colors group-hover:bg-brand-blue group-hover:text-white">
+                <div key={i} className={`pro-card flex flex-col items-start group cursor-pointer hover:border-ink-900/10 ${i === 2 ? 'sm:col-span-2 lg:col-span-1' : ''}`}>
+                  <div className="w-12 h-12 bg-surface-100 rounded-2xl flex items-center justify-center mb-6 text-brand-blue transition-all duration-300 group-hover:bg-ink-900 group-hover:text-white group-hover:rotate-6">
                     {card.icon}
                   </div>
-                  <h3 className="font-bold text-ink-800 text-sm mb-2">{card.title}</h3>
-                  <p className="text-[10px] text-ink-700/50 leading-relaxed">{card.desc}</p>
+                  <h3 className="font-display font-bold text-ink-900 text-base mb-3">{card.title}</h3>
+                  <p className="text-[12px] text-ink-700/60 leading-relaxed font-medium">{card.desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+          <div className="lg:col-span-4 flex flex-col gap-6 sm:gap-8">
             <VoterChecklist />
             
             {location && <LocalMetrics location={location} />}
@@ -226,24 +250,25 @@ export default function App() {
             
             {location && <PollingStationMap location={location} />}
             
-            <div className="pro-accent-card flex items-center gap-4">
-              <div className="bg-brand-blue p-2 rounded-lg text-white">
-                <Lightbulb size={20} />
+            <div className="pro-accent-card flex items-center gap-4 sm:gap-5 relative overflow-hidden noir-gradient">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl pointer-events-none" />
+              <div className="bg-white/10 p-3 rounded-xl text-white backdrop-blur-sm border border-white/10">
+                <Lightbulb size={24} />
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strategy Note</span>
-                <p className="text-xs leading-relaxed font-medium mt-1">Check registration status at least 45 days prior to cycles.</p>
+              <div className="relative z-10">
+                <span className="text-[10px] font-bold text-white/50 uppercase tracking-[0.2em] block mb-1">Strategy Note</span>
+                <p className="text-xs leading-relaxed font-semibold">Monitor registration status 45 days prior to cycle launch.</p>
               </div>
             </div>
           </div>
         </section>
 
         {/* --- Process & Advisor Grid --- */}
-        <section id="process" className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+        <section id="process" className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8">
+          <div className="lg:col-span-4 flex flex-col gap-6 sm:gap-8">
             <div className="pro-card flex-1">
-              <h2 className="text-xs font-bold text-ink-700 uppercase tracking-widest mb-8 px-2">Cycle Architecture</h2>
-              <div className="space-y-2">
+              <h2 className="text-[11px] font-bold text-ink-700 uppercase tracking-[0.2em] mb-6 sm:mb-10 px-2 opacity-50">Cycle Architecture</h2>
+              <div className="space-y-3">
                 {TIMELINE_DATA.map((step, idx) => (
                   <TimelineStep 
                     key={step.id} 
@@ -255,23 +280,23 @@ export default function App() {
               </div>
             </div>
             
-            <div className="bg-brand-blue rounded-xl p-6 text-white shadow-lg overflow-hidden relative">
-               <div className="absolute -bottom-4 -right-4 opacity-10">
-                 <Award size={100} />
+            <div className="bg-ink-900 rounded-2xl p-8 text-white shadow-2xl overflow-hidden relative border border-white/5">
+               <div className="absolute -bottom-6 -right-6 opacity-10 transform scale-150">
+                 <Award size={120} />
                </div>
-               <h3 className="font-bold text-sm uppercase tracking-widest mb-2">Verified Data</h3>
-               <p className="text-xs text-blue-100 leading-relaxed mb-4">Our systems utilize certified datasets from state election boards and federal legislative archives.</p>
-               <button className="text-[10px] font-bold uppercase tracking-widest py-2 border-b border-blue-300 hover:text-white transition-colors">Access Public Records</button>
+               <h3 className="font-display font-bold text-lg uppercase tracking-tight mb-4">Verified Data Assets</h3>
+               <p className="text-sm text-slate-400 leading-relaxed mb-6 font-medium">Our systems utilize certified datasets from state election boards and federal legislative archives.</p>
+               <button className="text-[10px] font-bold uppercase tracking-[0.2em] py-3 border-b-2 border-brand-blue hover:text-brand-blue transition-all">Access Public Records</button>
             </div>
           </div>
 
-          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-            <div id="advisor" className="pro-card p-0 flex flex-col overflow-hidden" role="region" aria-label="Grounded AI Advisor">
-              <div className="p-4 px-6 border-b border-surface-200 flex items-center justify-between">
-                <h2 className="text-xs font-bold text-ink-900 uppercase tracking-widest">Procedural Advisor</h2>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-[10px] font-bold text-ink-700/50 uppercase tracking-widest">Global Session</span>
+          <div className="lg:col-span-8 flex flex-col gap-8">
+            <div id="advisor" className="pro-card p-0 flex flex-col overflow-hidden bg-white/80 backdrop-blur-sm border-brand-blue/5 min-h-[400px] sm:min-h-[500px]" role="region" aria-label="Grounded AI Advisor">
+              <div className="p-4 sm:p-5 px-6 sm:px-8 border-b border-surface-200 flex items-center justify-between bg-surface-50/50">
+                <h2 className="text-[10px] sm:text-[11px] font-bold text-ink-900 uppercase tracking-[0.2em]">Institutional Advisor</h2>
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                  <span className="text-[11px] font-bold text-ink-700/50 uppercase tracking-widest">Secure Session</span>
                 </div>
               </div>
               <ChatAssistant 
@@ -283,56 +308,60 @@ export default function App() {
         </section>
 
         {/* --- Metrics Overview --- */}
-        <section id="stats" className="pro-card bg-white border-surface-200 p-0 overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-4 border-b border-surface-200">
+        <section id="stats" className="pro-card bg-ink-900 border-white/5 p-0 overflow-hidden shadow-2xl">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 border-b border-white/5">
             {[
               { label: "Total Eligible", value: "244.5M", change: "+1.2%" },
               { label: "Early Voters", value: "34.2%", change: "+5.1%" },
               { label: "Wait Variance", value: "12m", change: "-2m avg" },
               { label: "Data Integrity", value: "99.9%", change: "Verified" }
             ].map((stat, i) => (
-              <div key={i} className="p-8 border-r border-surface-200 last:border-r-0">
-                <span className="text-[10px] font-bold text-ink-700/40 uppercase tracking-widest block mb-2">{stat.label}</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-extrabold text-ink-900 tracking-tighter">{stat.value}</span>
-                  <span className="text-[10px] font-bold text-green-600">{stat.change}</span>
+              <div key={i} className="p-6 sm:p-10 border-r border-b border-white/5 last:border-r-0 md:last:border-b-0 hover:bg-white/[0.02] transition-colors cursor-default group">
+                <span className="text-[9px] sm:text-[10px] font-bold text-white/30 uppercase tracking-[0.25em] block mb-3 sm:mb-4 group-hover:text-brand-blue transition-colors">{stat.label}</span>
+                <div className="flex items-baseline gap-2 sm:gap-3">
+                  <span className="text-2xl sm:text-4xl font-display font-bold text-white tracking-tighter">{stat.value}</span>
+                  <span className="text-[10px] sm:text-[11px] font-bold text-green-400 opacity-80">{stat.change}</span>
                 </div>
               </div>
             ))}
           </div>
-          <div className="p-6 bg-slate-900 flex items-center justify-between text-white">
-            <p className="text-xs text-slate-400">Current Monitoring Focus: <span className="text-white font-bold ml-2">Federal General Election Protocol (Standard-2026)</span></p>
-            <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Operational Intelligence</div>
+          <div className="p-6 bg-black/40 flex flex-col md:flex-row items-center justify-between text-white gap-4">
+            <p className="text-xs text-white/40 font-medium">Monitoring Consensus: <span className="text-white font-bold ml-2">Federal General Election Protocol (Standard-2026)</span></p>
+            <div className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">Operational Neural Intelligence</div>
           </div>
         </section>
 
         {/* --- FAQ grid --- */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {FAQS.map((faq, i) => (
-            <div key={i} className="pro-card flex flex-col gap-3">
-              <h4 className="font-bold text-sm text-ink-900">{faq.question}</h4>
-              <p className="text-xs text-ink-700/60 leading-relaxed font-medium">{faq.answer}</p>
+            <div key={i} className="pro-card flex flex-col gap-4 border-brand-blue/5 hover:border-brand-blue/20">
+              <h4 className="font-display font-bold text-lg text-ink-900 leading-tight">{faq.question}</h4>
+              <p className="text-sm text-ink-700/60 leading-relaxed font-medium">{faq.answer}</p>
             </div>
           ))}
         </section>
 
         {/* --- CTA Section --- */}
-        <section className="bg-brand-blue rounded-2xl p-12 text-center text-white relative overflow-hidden shadow-2xl">
-           <div className="absolute inset-0 bg-ink-900/10 pointer-events-none" />
-           <div className="max-w-xl mx-auto flex flex-col gap-6 relative z-10">
-              <h2 className="text-3xl font-extrabold tracking-tight">Access the Full Electoral Dataset</h2>
-              <p className="text-blue-100 text-sm">Join over 1M+ citizens using Election Pulse AI to optimize their civic contribution and monitor institutional performance.</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
-                 <input placeholder="Enter institution email..." className="px-5 py-3 rounded-lg bg-white/20 border border-white/30 backdrop-blur-md outline-none text-white placeholder:text-white/50 text-sm w-full sm:w-64" />
-                 <button className="px-6 py-3 bg-white text-brand-blue rounded-lg font-bold shadow-lg text-sm hover:bg-white/90 transition-all transition-transform active:scale-95">Enable Integration</button>
+        <section className="noir-gradient rounded-[1.5rem] sm:rounded-[2rem] p-8 sm:p-16 text-center text-white relative overflow-hidden shadow-[0_20px_50px_rgba(2,6,23,0.3)] border border-white/5">
+           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_70%)] pointer-events-none" />
+           <div className="max-w-2xl mx-auto flex flex-col gap-6 sm:gap-8 relative z-10">
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight leading-tight sm:leading-none">Access Global <br className="hidden sm:block"/> Institutional Datasets.</h2>
+              <p className="text-slate-400 text-sm sm:text-lg leading-relaxed max-w-lg mx-auto font-medium">Join over 1M+ personnel using Election Pulse AI to optimize civic contribution and monitor local performance.</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4 sm:mt-6">
+                 <input placeholder="Personnel identification..." className="px-5 sm:px-6 py-3 sm:py-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xl outline-none text-white placeholder:text-white/30 text-sm w-full sm:w-72 focus:bg-white/10 transition-all focus:border-brand-blue/50" />
+                 <button className="px-6 sm:px-8 py-3 sm:py-4 bg-brand-blue text-white rounded-xl font-bold shadow-[0_10px_20px_rgba(59,130,246,0.2)] text-sm hover:translate-y-[-2px] hover:shadow-[0_15px_30px_rgba(59,130,246,0.3)] transition-all active:scale-95 w-full sm:w-auto">Link Integration</button>
               </div>
-              <p className="text-[10px] text-blue-200 uppercase tracking-widest font-bold mt-4 italic opacity-50">Enterprise Governance • Non-Partisan Intelligence</p>
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-4 sm:mt-6">
+                 <p className="text-[9px] sm:text-[11px] text-white/20 uppercase tracking-[0.3em] font-bold">Enterprise Governance</p>
+                 <div className="hidden sm:block w-1.5 h-1.5 bg-white/10 rounded-full" />
+                 <p className="text-[9px] sm:text-[11px] text-white/20 uppercase tracking-[0.3em] font-bold">Non-Partisan Assets</p>
+              </div>
            </div>
         </section>
       </main>
 
       <footer className="bg-white border-t border-surface-200 mt-20 pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-8 grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 mb-16">
           <div className="flex flex-col gap-4">
              <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-brand-blue rounded flex items-center justify-center text-white text-[10px] font-bold">E</div>
@@ -349,9 +378,9 @@ export default function App() {
             </div>
           ))}
         </div>
-        <div className="max-w-7xl mx-auto px-8 pt-8 border-t border-surface-100 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-surface-100 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-4 text-center md:text-left">
           <span className="text-[10px] font-bold text-ink-700/30 uppercase tracking-wider">© 2026 Pulse Intelligence Systems</span>
-          <div className="flex gap-8 text-[10px] font-bold text-ink-700/30 uppercase tracking-wider">
+          <div className="flex flex-wrap justify-center gap-6 sm:gap-8 text-[10px] font-bold text-ink-700/30 uppercase tracking-wider">
             <span>Security Statement</span>
             <span>Policy Protocol</span>
             <span>Data Rights</span>

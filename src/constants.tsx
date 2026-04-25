@@ -7,6 +7,15 @@ import React from 'react';
 import { UserPlus, History, Award, Info, Clock, Vote } from 'lucide-react';
 import { TimelineStep, VoterTrend, FAQItem, ChecklistItem } from './types';
 
+export type ThemeType = 'institutional' | 'brutalist' | 'minimal' | 'editorial';
+
+export const THEMES: { id: ThemeType; name: string; description: string }[] = [
+  { id: 'institutional', name: 'Institutional Noir', description: 'High-security, professional monitoring layout.' },
+  { id: 'brutalist', name: 'Technical Brutalist', description: 'Raw structure, neon accents, and high energy.' },
+  { id: 'minimal', name: 'Clean Minimal', description: 'Trustworthy, soft-ui, and functional clarity.' },
+  { id: 'editorial', name: 'Editorial Impact', description: 'Dramatic typography and bold brand statements.' },
+];
+
 export const TIMELINE_DATA: TimelineStep[] = [
   { id: 1, title: "Voter Registration", date: "Month -6", description: "Ensure you are registered to vote in your specific district. Deadlines vary by state.", icon: React.createElement(UserPlus, { className: "w-5 h-5" }), status: "Completed" },
   { id: 2, title: "Primary Elections", date: "Month -4", description: "Parties select their candidates for the general election.", icon: React.createElement(History, { className: "w-5 h-5" }), status: "Completed" },
