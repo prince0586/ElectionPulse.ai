@@ -95,13 +95,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-700/30 group-focus-within:text-brand-blue transition-colors" />
                 <input 
                   type="text" 
-                  maxLength={5}
+                  maxLength={10}
                   value={zipCode}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, '');
                     setZipCode(val);
                   }}
-                  placeholder="Enter location code for localized sync..."
+                  placeholder="Enter location code (e.g. 110001 or 90210)..."
                   className="w-full bg-surface-50 border border-surface-200 py-4 pl-12 pr-[100px] rounded-xl outline-none focus:border-brand-blue/30 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.05)] text-sm font-medium placeholder:text-ink-700/30 transition-all"
                   aria-label="Localization Zip Code"
                 />

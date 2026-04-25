@@ -123,7 +123,7 @@ export default function App() {
   }, [zipCode]);
 
   useEffect(() => {
-    if (debouncedZip.length === 5) {
+    if (debouncedZip.length >= 5 && debouncedZip.length <= 10) {
       fetchLocation(debouncedZip);
       // Institutional Sync: Trigger Civic Data Fetch
       getVoterInfo(debouncedZip)
@@ -141,15 +141,23 @@ export default function App() {
   }, [isHighContrast]);
 
   const fetchLocation = useCallback(async (zip: string) => {
-    if (zip.length !== 5) return;
+    if (zip.length < 5 || zip.length > 10) return;
     setIsLocating(true);
     try {
-      const res = await fetch(`https://api.zippopotam.us/us/${zip}`);
+      // First attempt with US zippopotam (default)
+      let res = await fetch(`https://api.zippopotam.us/us/${zip}`);
+      
+      // If not found and zip length is 6, try India (common request)
+      if (!res.ok && zip.length === 6) {
+        res = await fetch(`https://api.zippopotam.us/in/${zip}`);
+      }
+
       if (res.ok) {
         const data = await res.json();
+        const place = data.places[0];
         setLocation({
-          city: data.places[0]['place name'],
-          state: data.places[0].state,
+          city: place['place name'],
+          state: place.state || place['state abbreviation'],
           zipCode: zip
         });
       }

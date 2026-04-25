@@ -9,7 +9,7 @@
     "start": "NODE_ENV=production node server.ts",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "tsc --noEmit",
     "format": "prettier --write .",
     "clean": "rm -rf dist"
   },

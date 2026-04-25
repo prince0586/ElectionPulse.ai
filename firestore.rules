@@ -32,7 +32,7 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.keys().hasAll(['zipCode', 'isHighContrast', 'createdAt', 'updatedAt']) &&
              data.keys().size() == 4 &&
-             data.zipCode is string && data.zipCode.size() == 5 &&
+             data.zipCode is string && data.zipCode.size() >= 5 && data.zipCode.size() <= 10 &&
              data.isHighContrast is bool &&
              data.createdAt is timestamp &&
              data.updatedAt is timestamp;
