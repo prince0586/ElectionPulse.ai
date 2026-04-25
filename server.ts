@@ -51,6 +51,8 @@ async function startServer() {
   app.use(
     helmet({
       contentSecurityPolicy: false,
+      frameguard: false, // Required for AI Studio iFrame preview
+      crossOriginResourcePolicy: { policy: "cross-origin" },
     })
   );
   app.use(compression());
@@ -115,21 +117,25 @@ async function startServer() {
   });
 
   // --- Static Asset Serving ---
-
   const distPath = path.resolve(__dirname, "dist");
   const hasDist = fs.existsSync(distPath);
+  const isProd = process.env.NODE_ENV === "production";
 
-  if (process.env.NODE_ENV !== "production") {
+  console.log(`[Institutional Log] Environment: ${process.env.NODE_ENV}, Dist folder exists: ${hasDist}`);
+
+  if (isProd && hasDist) {
+    console.log("[Institutional Log] Serving production build from dist/");
+    app.use(express.static(distPath, { index: false }));
+    app.get("*", (req: Request, res: Response) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  } else {
+    console.log("[Institutional Log] Starting Vite middleware for development/fallback.");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    app.use(express.static(distPath, { index: false }));
-    app.get("*", (req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
   }
 
   // Final Error Handler

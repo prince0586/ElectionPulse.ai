@@ -52,7 +52,7 @@ const VoterChecklist: React.FC = () => {
            />
         </div>
         <div className="flex items-center justify-between mt-3">
-          <p className="text-[11px] font-bold text-brand-blue uppercase tracking-widest">{progress}% Readiness</p>
+          <p className="text-[11px] font-bold text-brand-blue uppercase tracking-widest">{progress}% Operational Readiness</p>
           {!user && !loadingAuth && (
             <button 
               onClick={handleSignIn}
