@@ -100,7 +100,57 @@
 }
 
 .high-contrast {
-  @apply grayscale contrast-125;
+  --color-surface-50: #ffffff;
+  --color-surface-100: #dbeafe;
+  --color-surface-200: #93c5fd;
+  --color-surface-300: #3b82f6;
+  --color-surface-400: #1d4ed8;
+  --color-ink-700: #1e3a8a;
+  --color-ink-800: #172554;
+  --color-ink-900: #000000;
+  --color-brand-blue: #1e40af;
+  --color-brand-crimson: #991b1b;
+}
+
+.high-contrast .pro-card {
+  @apply border-2 border-ink-900 shadow-none bg-white;
+}
+
+.high-contrast * {
+  @apply opacity-100! border-opacity-100!;
+  text-shadow: none !important;
+}
+
+.high-contrast p, .high-contrast span, .high-contrast div {
+  @apply opacity-100!;
+}
+
+.high-contrast .text-white\/30, 
+.high-contrast .text-white\/40, 
+.high-contrast .text-white\/20,
+.high-contrast .text-white\/80,
+.high-contrast .text-white\/50 {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.high-contrast .text-ink-700\/40, 
+.high-contrast .text-ink-700\/60,
+.high-contrast .text-ink-700\/50 {
+  color: var(--color-ink-700) !important;
+  opacity: 1 !important;
+}
+
+.high-contrast .bg-white\/5,
+.high-contrast .bg-white\/10,
+.high-contrast .bg-black\/20,
+.high-contrast .bg-black\/40 {
+  @apply bg-surface-200!;
+}
+
+.high-contrast .border-white\/5,
+.high-contrast .border-white\/10 {
+  @apply border-ink-900!;
 }
 
 .noir-gradient {
