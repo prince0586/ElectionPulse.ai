@@ -20,7 +20,13 @@ const civicCache: Record<string, any> = {};
  * Optimized with client-side memoization for institutional efficiency.
  */
 export async function getVoterInfo(address: string): Promise<CivicElectionData | null> {
-  if (civicCache[address]) return civicCache[address];
+  // Institutional check: Cleanse and validate input to prevent API parsing failure
+  const sanitizedAddress = address?.trim();
+  if (!sanitizedAddress || sanitizedAddress.length < 3) {
+    return null;
+  }
+
+  if (civicCache[sanitizedAddress]) return civicCache[sanitizedAddress];
 
   const apiKey = import.meta.env.VITE_GOOGLE_CIVIC_API_KEY;
   if (!apiKey) {
@@ -30,12 +36,19 @@ export async function getVoterInfo(address: string): Promise<CivicElectionData |
 
   try {
     const response = await fetch(
-      `${CIVIC_API_URL}/voterinfo?address=${encodeURIComponent(address)}&key=${apiKey}`
+      `${CIVIC_API_URL}/voterinfo?address=${encodeURIComponent(sanitizedAddress)}&key=${apiKey}`
     );
     
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}));
       const message = errorBody.error?.message || response.statusText || `HTTP ${response.status}`;
+      
+      // If the address cannot be parsed, we treat it as a localized "not found" rather than a hard failure
+      if (message.toLowerCase().includes('parse address')) {
+        console.warn(`Civic API: Address parse failure for "${sanitizedAddress}". Return null sync.`);
+        return null;
+      }
+      
       throw new Error(`Civic API failure: ${message}`);
     }
 
@@ -48,11 +61,11 @@ export async function getVoterInfo(address: string): Promise<CivicElectionData |
       state: data.state
     };
 
-    civicCache[address] = result;
+    civicCache[sanitizedAddress] = result;
     return result;
   } catch (error) {
     console.error("Civic API Integration Error:", error);
-    throw error;
+    return null; // Ensure high-resilience by returning null instead of throwing in production flow
   }
 }
 
@@ -60,12 +73,15 @@ export async function getVoterInfo(address: string): Promise<CivicElectionData |
  * Fetches institutional representative data for the provided address.
  */
 export async function getRepresentatives(address: string) {
+  const sanitizedAddress = address?.trim();
+  if (!sanitizedAddress || sanitizedAddress.length < 3) return null;
+
   const apiKey = import.meta.env.VITE_GOOGLE_CIVIC_API_KEY;
   if (!apiKey) return null;
 
   try {
     const response = await fetch(
-      `${CIVIC_API_URL}/representatives?address=${encodeURIComponent(address)}&key=${apiKey}`
+      `${CIVIC_API_URL}/representatives?address=${encodeURIComponent(sanitizedAddress)}&key=${apiKey}`
     );
     
     if (!response.ok) return null;

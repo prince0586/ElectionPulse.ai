@@ -117,12 +117,13 @@
 }
 
 .high-contrast * {
-  @apply opacity-100! border-opacity-100!;
+  opacity: 1 !important;
+  border-color: inherit; /* Ensure borders are visible */
   text-shadow: none !important;
 }
 
 .high-contrast p, .high-contrast span, .high-contrast div {
-  @apply opacity-100!;
+  opacity: 1 !important;
 }
 
 .high-contrast .text-white\/30, 
@@ -145,12 +146,12 @@
 .high-contrast .bg-white\/10,
 .high-contrast .bg-black\/20,
 .high-contrast .bg-black\/40 {
-  @apply bg-surface-200!;
+  background-color: var(--color-surface-200) !important;
 }
 
 .high-contrast .border-white\/5,
 .high-contrast .border-white\/10 {
-  @apply border-ink-900!;
+  border-color: var(--color-ink-900) !important;
 }
 
 .noir-gradient {

@@ -30,13 +30,13 @@ vi.mock('../src/lib/firebase', () => ({
 
 describe('Institutional Integration: Voter Protocols', () => {
   it('should calculate and display progress accurately', () => {
-    render(<VoterChecklist />);
+    render(<VoterChecklist location={null} />);
     // With 1 item checked out of 2, progress should be 50%
     expect(screen.getByText(/50% Operational Readiness/i)).toBeDefined();
   });
 
   it('should display the secure sync indicator for authenticated users', () => {
-    render(<VoterChecklist />);
+    render(<VoterChecklist location={null} />);
     expect(screen.getByText(/Personnel Protocol/i)).toBeDefined();
   });
 });

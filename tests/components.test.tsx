@@ -20,6 +20,7 @@ describe('Institutional UI Components', () => {
           toggleContrast={toggle} 
           currentTheme="minimal" 
           setTheme={vi.fn()} 
+          onProfileClick={vi.fn()}
         />
       );
       expect(screen.getByText(/ElectionPulse.ai/i)).toBeDefined();
@@ -33,6 +34,7 @@ describe('Institutional UI Components', () => {
           toggleContrast={toggle} 
           currentTheme="minimal" 
           setTheme={vi.fn()} 
+          onProfileClick={vi.fn()}
         />
       );
       expect(screen.getByText(/Contrast/i)).toBeDefined();

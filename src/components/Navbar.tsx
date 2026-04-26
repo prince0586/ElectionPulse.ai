@@ -4,21 +4,27 @@
  */
 
 import React from 'react';
-import { Eye, EyeOff, Palette, Menu, X } from 'lucide-react';
+import { Eye, EyeOff, Palette, Menu, X, User, ShieldCheck, MailWarning } from 'lucide-react';
+import { motion } from 'motion/react';
 import { ThemeType, THEMES } from '../constants.tsx';
+import { auth } from '../lib/firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { signOut } from 'firebase/auth';
 
 interface NavbarProps {
   isHighContrast: boolean;
   toggleContrast: () => void;
   currentTheme: ThemeType;
   setTheme: (theme: ThemeType) => void;
+  onProfileClick: () => void;
 }
 
 /**
  * Navbar component for institutional navigation and accessibility controls.
  * Updated with mobile menu for full responsive accessibility.
  */
-const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, currentTheme, setTheme }) => {
+const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, currentTheme, setTheme, onProfileClick }) => {
+  const [user] = useAuthState(auth);
   const [showThemePicker, setShowThemePicker] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -42,14 +48,16 @@ const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, current
           {/* Core Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="relative">
-              <button 
+              <motion.button 
                 onClick={() => setShowThemePicker(!showThemePicker)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className={`p-2 sm:px-3 sm:py-2 rounded-xl border flex items-center gap-2 transition-all shrink-0 ${isHighContrast ? 'border-ink-900 hover:bg-ink-900/10' : 'border-surface-200 hover:border-brand-blue/30 bg-surface-50/50'}`}
                 aria-label="Change application design theme"
               >
                 <Palette className="w-4 h-4 text-brand-blue" />
                 <span className="hidden xl:inline text-[10px] font-bold uppercase tracking-[0.2em]">Protocol</span>
-              </button>
+              </motion.button>
               
               {showThemePicker && (
                 <div className={`absolute top-full right-0 mt-2 w-64 p-3 rounded-2xl shadow-2xl border animate-in fade-in slide-in-from-top-2 duration-200 ${isHighContrast ? 'bg-surface-50 border-ink-900' : 'bg-white border-surface-100'}`}>
@@ -73,14 +81,16 @@ const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, current
               )}
             </div>
 
-            <button 
+            <motion.button 
               onClick={toggleContrast}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               aria-label={isHighContrast ? "Standard mode" : "High contrast mode"}
               className={`p-2 sm:px-3 sm:py-2 rounded-xl border flex items-center gap-2 transition-all shrink-0 ${isHighContrast ? 'border-ink-900 hover:bg-ink-900/10' : 'border-surface-200 hover:border-brand-blue/30 bg-surface-50/50'}`}
             >
               {isHighContrast ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4 text-ink-700/50" />}
               <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.2em]">{isHighContrast ? 'Standard' : 'Contrast'}</span>
-            </button>
+            </motion.button>
 
             {/* Mobile Menu Toggle */}
             <button 
@@ -98,9 +108,41 @@ const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, current
               <a href="#process" className="hover:text-brand-blue">Process</a>
               <a href="#stats" className="hover:text-brand-blue">Insights</a>
             </nav>
-            <button className={`px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 shrink-0 ${isHighContrast ? 'bg-brand-blue text-white hover:bg-brand-blue/90' : 'bg-ink-900 text-white hover:bg-ink-800'}`}>
-              Audit Personnel
-            </button>
+            {user ? (
+              <div className="flex items-center gap-4 border-l border-surface-200 pl-4">
+                <div 
+                  onClick={onProfileClick}
+                  className="flex flex-col items-end cursor-pointer group"
+                >
+                  <span className="text-[10px] font-bold text-ink-900 truncate max-w-[120px] group-hover:text-brand-blue transition-colors">{user.displayName || user.email}</span>
+                  {user.emailVerified ? (
+                    <span className="flex items-center gap-1 text-[8px] font-bold text-green-600 uppercase tracking-tighter">
+                      <ShieldCheck className="w-2.5 h-2.5" /> Verified Protocol
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[8px] font-bold text-brand-crimson uppercase tracking-tighter">
+                      <MailWarning className="w-2.5 h-2.5" /> Unverified
+                    </span>
+                  )}
+                </div>
+                <motion.button 
+                  onClick={() => signOut(auth)}
+                  whileHover={{ scale: 1.1, backgroundColor: isHighContrast ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.02)' }}
+                  whileTap={{ scale: 0.9 }}
+                  className={`p-2 rounded-xl border transition-all ${isHighContrast ? 'border-ink-900 hover:bg-ink-900/10' : 'border-surface-200 hover:bg-surface-50'}`}
+                  title="Sign Out"
+                >
+                  <User className="w-4 h-4 text-ink-700" />
+                </motion.button>
+              </div>
+            ) : (
+              <motion.button 
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-md shrink-0 ${isHighContrast ? 'bg-brand-blue text-white hover:bg-brand-blue/90' : 'bg-ink-900 text-white hover:bg-ink-800'}`}>
+                Audit Personnel
+              </motion.button>
+            )}
           </div>
         </div>
       </div>
@@ -114,6 +156,18 @@ const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, current
               <span className="text-sm font-bold">2026 Midterms • Active Sync</span>
             </div>
             <nav className="flex flex-col gap-2">
+              {user && (
+                <button 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onProfileClick();
+                  }} 
+                  className={`px-4 py-3 text-sm font-bold rounded-xl transition-colors text-left flex items-center gap-3 ${isHighContrast ? 'hover:bg-ink-900/10' : 'hover:bg-surface-50'}`}
+                >
+                  <User className="w-4 h-4 text-brand-blue" />
+                  <span>Personnel Profile</span>
+                </button>
+              )}
               <a href="#process" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-sm font-bold rounded-xl transition-colors ${isHighContrast ? 'hover:bg-ink-900/10' : 'hover:bg-surface-50'}`}>Strategic Process</a>
               <a href="#stats" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-sm font-bold rounded-xl transition-colors ${isHighContrast ? 'hover:bg-ink-900/10' : 'hover:bg-surface-50'}`}>Global Insights</a>
               <a href="#assistant" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-sm font-bold rounded-xl transition-colors ${isHighContrast ? 'hover:bg-ink-900/10' : 'hover:bg-surface-50'}`}>AI Advisor Instance</a>

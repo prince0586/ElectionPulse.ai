@@ -28,9 +28,9 @@ export const useChecklist = () => {
   const [items, setItems] = useState<ChecklistItem[]>(INITIAL_CHECKLIST);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Sync with Firestore when authenticated
+  // Sync with Firestore when authenticated and verified
   useEffect(() => {
-    if (!user) {
+    if (!user || !user.emailVerified) {
       // Fallback to localStorage logic
       const saved = localStorage.getItem('voter_checklist');
       if (saved) setItems(JSON.parse(saved));
@@ -83,7 +83,7 @@ export const useChecklist = () => {
     // Optimistic Update with enhanced metadata
     setItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked, updatedAt: now } : i));
 
-    if (user) {
+    if (user && user.emailVerified) {
       const path = `users/${user.uid}/checklist/${id}`;
       const itemRef = doc(db, 'users', user.uid, 'checklist', id);
       try {

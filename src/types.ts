@@ -91,6 +91,35 @@ export interface CivicContest {
   }>;
 }
 
+export interface CivicOfficial {
+  name: string;
+  address?: Array<{
+    line1: string;
+    city: string;
+    state: string;
+    zip: string;
+  }>;
+  party?: string;
+  phones?: string[];
+  urls?: string[];
+  photoUrl?: string;
+  channels?: Array<{ type: string; id: string }>;
+}
+
+export interface CivicOffice {
+  name: string;
+  divisionId: string;
+  levels?: string[];
+  roles?: string[];
+  officialIndices: number[];
+}
+
+export interface CivicRepresentativeResponse {
+  offices: CivicOffice[];
+  officials: CivicOfficial[];
+  divisions: Record<string, { name: string }>;
+}
+
 export interface ChecklistItem {
   id: string;
   text: string;

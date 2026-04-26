@@ -24,7 +24,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { 
       role: 'ai', 
-      content: "Hello! I'm your Election Pulse advisor. I can help you understand the voting process, registration deadlines, and how elections work. What would you like to know today?",
+      content: "Hello! I'm here to help you navigate the voting process with confidence. As your Election Pulse advisor, I can guide you through registration deadlines, polling locations, and everything you need to make your voice heard. How can I assist you today?",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -133,13 +133,15 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
           placeholder="Ask analytical questions..."
           className="flex-1 bg-surface-50 border border-surface-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
-        <button 
+        <motion.button 
           onClick={handleSend}
           disabled={isLoading}
-          className="bg-brand-blue text-white p-2.5 rounded-lg disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
+          whileHover={{ scale: 1.1, backgroundColor: '#2563eb' }}
+          whileTap={{ scale: 0.9 }}
+          className="bg-brand-blue text-white p-2.5 rounded-lg disabled:opacity-50 transition-all shadow-md"
         >
           <Send className="w-4 h-4" />
-        </button>
+        </motion.button>
       </div>
     </div>
   );

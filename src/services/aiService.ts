@@ -3,35 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI } from "@google/genai";
-import { AI_CONFIG } from "../constants";
 import { ChatMessage, GroundingSource } from "../types";
-
-let modelCache: any = null;
 
 /**
  * Institutional AI Intelligence Service powering grounded election advisory.
- */
-export async function getInstitutionalAdvisor() {
-  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Institutional Authentication Failure: GEMINI_API_KEY missing.");
-  }
-
-  if (!modelCache) {
-    const genAI = new GoogleGenAI(apiKey);
-    modelCache = (genAI as any).getGenerativeModel({
-      model: AI_CONFIG.model,
-      systemInstruction: AI_CONFIG.systemInstruction,
-      tools: [{ googleSearch: {} } as any],
-    }) as any;
-  }
-
-  return modelCache;
-}
-
-/**
- * Standardized analytical processing for incoming civic queries.
+ * Updated to use full-stack proxying for institutional security.
  */
 export async function processAdvisorQuery(
   query: string,
@@ -39,22 +15,21 @@ export async function processAdvisorQuery(
   onUpdate?: (partial: string) => void
 ): Promise<Partial<ChatMessage>> {
   try {
-    const model = await getInstitutionalAdvisor();
-    
-    // Convert history to Gemini format
-    const contents = history.map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }]
-    }));
-
-    // Start Chat for context
-    const chat = model.startChat({
-      history: contents,
+    const response = await fetch('/api/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, history }),
     });
 
-    const result = await chat.sendMessage(query);
-    const response = await result.response;
-    let text = response.text();
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Institutional AI connectivity failure.");
+    }
+
+    const data = await response.json();
+    let text = data.text;
 
     // Institutional Parsing: Confidence Metadata
     let confidenceScore: number | undefined;
@@ -64,14 +39,14 @@ export async function processAdvisorQuery(
       text = text.replace(/\[CONFIDENCE:\s*\d+\]/gi, '').trim();
     }
 
-    // Grounding Extraction
-    const groundingMetadata = (response as any).candidates?.[0]?.groundingMetadata;
+    // Grounding Extraction from Candidates
     const citations: GroundingSource[] = [];
+    const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
     
     if (groundingMetadata?.searchEntryPoint?.renderedContent) {
       citations.push({
         title: "Google Search Grounding",
-        url: "#", // Placeholder as direct URLs often aren't in this specific metadata field easily
+        url: "#",
         html: groundingMetadata.searchEntryPoint.renderedContent
       });
     }
@@ -80,10 +55,10 @@ export async function processAdvisorQuery(
       content: text,
       confidenceScore,
       citations,
-      timestamp: new Date().toISOString()
+      timestamp: data.timestamp || new Date().toISOString()
     };
   } catch (error) {
-    console.error("[Institutional AI Error]:", error);
-    throw new Error("AI intelligence unavailable at this protocol level.");
+    console.error("[Institutional AI Service Error]:", error);
+    throw new Error("AI intelligence unavailable at this protocol level. Please verify server connectivity.");
   }
 }

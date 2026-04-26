@@ -107,13 +107,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                    {isLocating && <Loader2 className="w-4 h-4 animate-spin text-brand-blue" />}
-                   <button 
+                   <motion.button 
                      onClick={detectLocation}
+                     whileHover={{ scale: 1.1, rotate: 15 }}
+                     whileTap={{ scale: 0.9 }}
                      className="p-1.5 text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                      title="Detect my location"
                    >
                       <Navigation className="w-4 h-4" />
-                   </button>
+                   </motion.button>
                 </div>
              </div>
              {location && (
