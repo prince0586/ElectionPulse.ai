@@ -118,6 +118,12 @@ export interface CivicRepresentativeResponse {
   offices: CivicOffice[];
   officials: CivicOfficial[];
   divisions: Record<string, { name: string }>;
+  normalizedInput?: {
+    line1?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+  };
 }
 
 export interface ChecklistItem {
