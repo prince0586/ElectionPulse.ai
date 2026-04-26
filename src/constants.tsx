@@ -43,11 +43,11 @@ export const FAQS: FAQItem[] = [
 ];
 
 export const INITIAL_CHECKLIST: ChecklistItem[] = [
-  { id: 1, text: "Verify Registration Status", checked: false },
-  { id: 2, text: "Locate Certified Polling Station", checked: false },
-  { id: 3, text: "Review Sample Ballot Data", checked: false },
-  { id: 4, text: "Check Valid Identification Laws", checked: false },
-  { id: 5, text: "Finalize Election Day Schedule", checked: false },
+  { id: '1', text: "Verify Registration Status", checked: false, priority: 'high', updatedAt: new Date().toISOString() },
+  { id: '2', text: "Locate Certified Polling Station", checked: false, priority: 'high', updatedAt: new Date().toISOString() },
+  { id: '3', text: "Review Sample Ballot Data", checked: false, priority: 'medium', updatedAt: new Date().toISOString() },
+  { id: '4', text: "Check Valid Identification Laws", checked: false, priority: 'high', updatedAt: new Date().toISOString() },
+  { id: '5', text: "Finalize Election Day Schedule", checked: false, priority: 'low', updatedAt: new Date().toISOString() },
 ];
 
 export const STATE_WAIT_FACTORS: Record<string, number> = {

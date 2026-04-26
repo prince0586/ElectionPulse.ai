@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback, useMemo } from 'react';
 import { 
   Vote, 
   Loader2, 
@@ -97,48 +97,26 @@ export default function App() {
     const root = document.documentElement;
     root.classList.remove('theme-institutional', 'theme-brutalist', 'theme-minimal', 'theme-editorial');
     root.classList.add(`theme-${theme}`);
-    
-    // Smooth transition trigger
     root.style.setProperty('--theme-transition', '0.5s');
   }, [theme]);
 
-  // Logic to fetch a 'Pro-Tip' from Gemini or a static pool for alignment
-  useEffect(() => {
-    const tips = [
-      "Check registration status 45 days before the cycle.",
-      "Verify polling station locations 48 hours before voting.",
-      "Review official sample ballots to save time at the booth.",
-      "Ensure identification documents meet state-specific criteria."
-    ];
-    setDailyTip(tips[Math.floor(Math.random() * tips.length)]);
-  }, []);
+  const tips = useMemo(() => [
+    "Check registration status 45 days before the cycle.",
+    "Verify polling station locations 48 hours before voting.",
+    "Review official sample ballots to save time at the booth.",
+    "Ensure identification documents meet state-specific criteria."
+  ], []);
 
-  // Debounce logic for zip code processing
+  useEffect(() => {
+    setDailyTip(tips[Math.floor(Math.random() * tips.length)]);
+  }, [tips]);
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedZip(zipCode);
     }, 400);
-
     return () => clearTimeout(handler);
   }, [zipCode]);
-
-  useEffect(() => {
-    if (debouncedZip.length >= 5 && debouncedZip.length <= 10) {
-      fetchLocation(debouncedZip);
-      // Institutional Sync: Trigger Civic Data Fetch
-      getVoterInfo(debouncedZip)
-        .then(setCivicData)
-        .catch(err => console.error("Institutional Civic Sync Failure:", err));
-    }
-  }, [debouncedZip]);
-
-  useEffect(() => {
-    if (isHighContrast) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isHighContrast]);
 
   const fetchLocation = useCallback(async (zip: string) => {
     if (zip.length < 5 || zip.length > 10) return;
@@ -167,6 +145,15 @@ export default function App() {
       setIsLocating(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (debouncedZip.length >= 5 && debouncedZip.length <= 10) {
+      fetchLocation(debouncedZip);
+      getVoterInfo(debouncedZip)
+        .then(setCivicData)
+        .catch(err => console.error("Institutional Civic Sync Failure:", err));
+    }
+  }, [debouncedZip, fetchLocation]);
 
   const handleSyncAll = () => {
     // Strategic Sync: Open primary registration event as a test, 

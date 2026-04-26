@@ -13,10 +13,15 @@ export interface CivicElectionData {
   state?: any[];
 }
 
+const civicCache: Record<string, any> = {};
+
 /**
  * Service to interact with Google Civic Information API for official election data.
+ * Optimized with client-side memoization for institutional efficiency.
  */
 export async function getVoterInfo(address: string): Promise<CivicElectionData | null> {
+  if (civicCache[address]) return civicCache[address];
+
   const apiKey = import.meta.env.VITE_GOOGLE_CIVIC_API_KEY;
   if (!apiKey) {
     console.warn("Institutional Alert: VITE_GOOGLE_CIVIC_API_KEY is missing. Falling back to grounded AI only.");
@@ -35,16 +40,19 @@ export async function getVoterInfo(address: string): Promise<CivicElectionData |
     }
 
     const data = await response.json();
-    return {
+    const result = {
       electionName: data.election?.name || 'Upcoming Election',
       electionDay: data.election?.electionDay || 'TBD',
       pollingLocations: data.pollingLocations,
       contests: data.contests,
       state: data.state
     };
+
+    civicCache[address] = result;
+    return result;
   } catch (error) {
     console.error("Civic API Integration Error:", error);
-    throw error; // Re-throw so the UI can handle the error state
+    throw error;
   }
 }
 

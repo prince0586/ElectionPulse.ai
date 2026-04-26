@@ -59,10 +59,10 @@ export const useChecklist = () => {
       } else {
         const fetchedItems = snapshot.docs.map(doc => ({
           ...doc.data(),
-          id: Number(doc.id)
+          id: doc.id
         } as ChecklistItem));
-        // Sort by ID to maintain protocol order
-        setItems(fetchedItems.sort((a, b) => a.id - b.id));
+        // Maintain consistent protocol ordering via textual sort
+        setItems(fetchedItems.sort((a, b) => a.id.localeCompare(b.id)));
       }
       setIsSyncing(false);
     }, (error) => {
@@ -73,18 +73,19 @@ export const useChecklist = () => {
     return () => unsubscribe();
   }, [user]);
 
-  const toggleItem = async (id: number) => {
+  const toggleItem = async (id: string) => {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
     const newChecked = !item.checked;
+    const now = new Date().toISOString();
 
-    // Optimistic Update
-    setItems(items.map(i => i.id === id ? { ...i, checked: newChecked } : i));
+    // Optimistic Update with enhanced metadata
+    setItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked, updatedAt: now } : i));
 
     if (user) {
       const path = `users/${user.uid}/checklist/${id}`;
-      const itemRef = doc(db, 'users', user.uid, 'checklist', String(id));
+      const itemRef = doc(db, 'users', user.uid, 'checklist', id);
       try {
         await updateDoc(itemRef, {
           checked: newChecked,
@@ -92,10 +93,11 @@ export const useChecklist = () => {
         });
       } catch (e) {
         handleFirestoreError(e, OperationType.UPDATE, path);
+        // Rollback on failure
+        setItems(prev => prev.map(i => i.id === id ? { ...i, checked: !newChecked } : i));
       }
     } else {
-      // Save to localStorage for non-auth users
-      const updated = items.map(i => i.id === id ? { ...i, checked: newChecked } : i);
+      const updated = items.map(i => i.id === id ? { ...i, checked: newChecked, updatedAt: now } : i);
       localStorage.setItem('voter_checklist', JSON.stringify(updated));
     }
   };

@@ -3,15 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Globe, ShieldCheck, Search, ExternalLink, Loader2, Send } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import Markdown from 'react-markdown';
-import { GoogleGenAI } from "@google/genai";
 import { ChatMessage } from '../types';
-import { AI_CONFIG } from '../constants';
-
-import { getVoterInfo, getRepresentatives } from '../services/civicService';
+import { processAdvisorQuery } from '../services/aiService';
+import { getVoterInfo } from '../services/civicService';
 
 interface ChatAssistantProps {
   location?: string;
@@ -19,234 +17,165 @@ interface ChatAssistantProps {
 }
 
 /**
- * AI Advisor component with Google Search Grounding for real-time election intelligence.
+ * Institutional AI Advisor component.
+ * Optimized for minimal re-renders and grounded informational integrity.
  */
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ location, zipCode }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'ai', content: "Hello! I'm your Election Pulse advisor. I can help you understand the voting process, registration deadlines, and how elections work. What would you like to know today?" }
+    { 
+      role: 'ai', 
+      content: "Hello! I'm your Election Pulse advisor. I can help you understand the voting process, registration deadlines, and how elections work. What would you like to know today?",
+      timestamp: new Date().toISOString()
+    }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [civicData, setCivicData] = useState<any>(null);
-  const [civicError, setCivicError] = useState<string | null>(null);
 
-  // Effect to fetch official Civic Data when zip changes
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
+
   useEffect(() => {
-    if (zipCode && zipCode.length === 5) {
-      setCivicError(null);
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // Handle analytical civic sync
+  useEffect(() => {
+    if (zipCode && (zipCode.length === 5 || zipCode.length === 6)) {
       getVoterInfo(zipCode)
         .then(data => {
           if (data) {
-            setCivicData(data);
-            setMessages(prev => [...prev, { 
-              role: 'ai', 
-              content: `Institutional Update: I have localized your advisor with official data for the **${data.electionName}** on **${data.electionDay}**. How can I assist with your specific region?` 
-            }]);
+            setMessages(prev => {
+              const lastIsSync = prev[prev.length - 1]?.content.includes('Institutional Sync: Localized');
+              if (lastIsSync) return prev;
+              return [...prev, { 
+                role: 'ai', 
+                content: `Institutional Sync: Localized for **${data.electionName}**. Official protocols reconciled for ${zipCode}.`,
+                timestamp: new Date().toISOString()
+              }];
+            });
           }
         })
-        .catch(err => {
-          console.error("ChatAssistant: Civic Sync Error", err);
-          setCivicError(err.message || "Localized verification failed.");
-        });
+        .catch(err => console.warn("Advisor: Sync delay", err));
     }
   }, [zipCode]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    // --- Institutional Guardrail: Pre-processing Filter ---
-    const lowerInput = input.toLowerCase();
-    const forbiddenPatterns = [/ignore.*previous/i, /your.*prompt/i, /be.a.different/i];
-    const isInjectionAttempt = forbiddenPatterns.some(p => p.test(lowerInput));
-    
-    if (isInjectionAttempt) {
-      setMessages(prev => [...prev, 
-        { role: 'user', content: input },
-        { role: 'ai', content: "Protocol Violation Detected: I am strictly bound to election procedural guidance. Deviating from my core directive is not permitted." }
-      ]);
-      setInput('');
-      return;
-    }
-
-    const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'ai', content: "Error: GEMINI_API_KEY is not configured in environment secrets." }]);
-      return;
-    }
-
-    const genAI = new GoogleGenAI(apiKey);
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const newMessage: ChatMessage = { 
+      role: 'user', 
+      content: userMessage, 
+      timestamp: new Date().toISOString() 
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
     setIsLoading(true);
 
     try {
-      const model = (genAI as any).getGenerativeModel({ 
-        model: AI_CONFIG.model,
-        systemInstruction: AI_CONFIG.systemInstruction,
-        tools: [
-          { googleSearch: {} }
-        ],
-      });
-
-      const result = await model.generateContent(userMessage);
-      const response = await result.response;
-      let text = response.text();
-
-      // Extract confidence score
-      let confidenceScore: number | undefined;
-      const confidenceMatch = text.match(/\[CONFIDENCE:\s*(\d+)\]/i);
-      if (confidenceMatch) {
-        confidenceScore = parseInt(confidenceMatch[1], 10);
-        // Remove the confidence bracket from the display text
-        text = text.replace(/\[CONFIDENCE:\s*\d+\]/gi, '').trim();
-      }
-
-      // Extract grounding metadata if exists
-      const groundingMetadata = (result.response as any).candidates?.[0]?.groundingMetadata;
-      const citations = groundingMetadata?.searchEntryPoint?.renderedContent 
-        ? [{ title: "Google Search Grounding", html: groundingMetadata.searchEntryPoint.renderedContent }]
-        : [];
-
-      setMessages(prev => [...prev, { 
-        role: 'ai', 
-        content: text || "I'm sorry, I couldn't process that request.",
-        citations,
-        confidenceScore
+      const response = await processAdvisorQuery(userMessage, messages);
+      
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: response.content || "Protocol ambiguity detected. Please refine query.",
+        citations: response.citations,
+        confidenceScore: response.confidenceScore,
+        timestamp: response.timestamp || new Date().toISOString()
       }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'ai', content: "Something went wrong. Please try again later." }]);
+      setMessages(prev => [...prev, { 
+        role: 'ai', 
+        content: "Institutional logic interrupted. Please verify connection and retry.",
+        timestamp: new Date().toISOString()
+      }]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const messageList = useMemo(() => (
+    messages.map((m, i) => (
+      <MessageItem key={`${m.timestamp}-${i}`} message={m} />
+    ))
+  ), [messages]);
+
   return (
-    <div id="advisor-chat-container" className="pro-card flex flex-col h-[500px] sm:h-[600px] overflow-hidden p-0" role="region" aria-label="AI Election Advisor Chat">
-      <div id="advisor-header" className="bg-ink-900 p-4 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div id="advisor-chat-container" className="pro-card flex flex-col h-[500px] sm:h-[600px] overflow-hidden p-0 border border-surface-200" role="region" aria-label="AI Advisor">
+      <div className="bg-ink-900 p-4 text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-white/10 p-2 rounded-lg">
-            <Globe className="w-5 h-5 text-brand-blue" />
-          </div>
-          <div>
-            <h3 className="font-bold leading-none text-sm uppercase tracking-wide">Live Grounded Advisor</h3>
-            <p className="text-[10px] opacity-50 mt-1 uppercase tracking-widest flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> Grounded Intelligence
-            </p>
-          </div>
+          <Globe className="w-5 h-5 text-brand-blue" />
+          <h3 className="font-bold text-sm uppercase tracking-wide">Civic Advisor</h3>
         </div>
-        <div className={`px-3 py-1 ${civicError ? 'bg-red-500/20 border-red-500/30 text-red-500' : 'bg-brand-blue/20 border-brand-blue/30 text-brand-blue'} border rounded flex items-center gap-2`}>
-          <div className={`w-1.5 h-1.5 ${civicError ? 'bg-red-500' : 'bg-brand-blue'} rounded-full animate-pulse`} />
-          <span className="text-[10px] uppercase font-bold tracking-widest">
-            {civicError ? 'Verification Restricted' : 'Google Cloud Sync'}
-          </span>
+        <div className="text-[10px] font-bold text-brand-blue uppercase bg-brand-blue/10 px-2 py-0.5 rounded border border-brand-blue/20">
+          Grounded v2.0
         </div>
       </div>
       
-      <div id="advisor-chat-history" ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-surface-50 custom-scrollbar" aria-live="polite">
-        {messages.map((m, i) => (
-          <motion.div 
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
-          >
-            <div className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 rounded-xl shadow-sm ${
-              m.role === 'user' 
-                ? 'bg-brand-blue text-white rounded-tr-none' 
-                : 'bg-white text-ink-800 rounded-tl-none border border-surface-200'
-            }`}>
-              <div className="prose prose-sm prose-slate max-w-none">
-                 <Markdown>{m.content}</Markdown>
-              </div>
-            </div>
-            
-            {m.role === 'ai' && (
-              <div className="mt-2 flex flex-col gap-2 w-full">
-                <div className="flex items-center gap-3 px-1 text-[10px] font-bold uppercase tracking-tight text-ink-700/40">
-                  <div className="flex items-center gap-1 text-green-600">
-                    <ShieldCheck className="w-3 h-3" />
-                    Neural Verification: Passed
-                  </div>
-                  {m.citations && m.citations.length > 0 && (
-                    <div className="flex items-center gap-1 text-brand-blue">
-                      <Search className="w-3 h-3" />
-                      Verified by Google Search
-                    </div>
-                  )}
-                  {m.confidenceScore !== undefined && (
-                    <div className="flex items-center gap-2 border-l border-ink-700/10 pl-3">
-                      <span className="opacity-50">Grounding Confidence:</span>
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <div className="w-16 bg-ink-900/5 h-1.5 rounded-full overflow-hidden">
-                          <motion.div 
-                            className={`h-full ${m.confidenceScore > 85 ? 'bg-green-500' : m.confidenceScore > 70 ? 'bg-brand-blue' : 'bg-amber-500'}`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${m.confidenceScore}%` }}
-                          />
-                        </div>
-                        <span className={m.confidenceScore > 85 ? 'text-green-600' : m.confidenceScore > 70 ? 'text-brand-blue' : 'text-amber-600'}>
-                          {m.confidenceScore}%
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {m.citations && m.citations.map((cite, idx) => (
-                  <div key={idx} className="bg-brand-blue/5 border border-brand-blue/10 rounded p-2 text-[9px] text-brand-blue flex items-center justify-between group">
-                    <div className="flex items-center gap-2">
-                       <ExternalLink className="w-3 h-3" />
-                       <span className="font-bold opacity-70">Grounding Source:</span>
-                       <div dangerouslySetInnerHTML={{ __html: cite.html.replace(/<a /g, '<a rel="noopener noreferrer" target="_blank" ') }} className="citation-links font-medium" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white p-4 rounded-xl rounded-tl-none border border-surface-200 shadow-sm flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-brand-blue" />
-              <span className="text-xs font-medium text-ink-700/50 uppercase tracking-wider">Syncing with Google Search...</span>
-            </div>
-          </div>
-        )}
+      <div id="advisor-scroll-area" ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 bg-surface-50 custom-scrollbar">
+        {messageList}
+        {isLoading && <LoadingMessage />}
       </div>
 
-      <div id="advisor-input-area" className="p-4 bg-white border-t border-surface-200">
-        <label htmlFor="advisor-message-input" className="sr-only">Message the AI Advisor</label>
-        <div className="relative flex items-center gap-2">
-          <input 
-            id="advisor-message-input"
-            type="text" 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about turnout, deadlines, or process..."
-            className="flex-1 bg-surface-50 border border-surface-200 focus:border-brand-blue/30 rounded-lg px-4 py-3 outline-none transition-all text-sm"
-          />
-          <button 
-            id="advisor-send-button"
-            onClick={handleSend}
-            disabled={isLoading}
-            aria-label="Send message"
-            className="p-3 bg-brand-blue text-white rounded-lg hover:bg-brand-blue/90 transition-colors disabled:opacity-50 shadow-sm"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </div>
+      <div className="p-4 bg-white border-t border-surface-100 flex gap-2">
+        <input 
+          type="text" 
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          placeholder="Ask analytical questions..."
+          className="flex-1 bg-surface-50 border border-surface-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-blue/20"
+        />
+        <button 
+          onClick={handleSend}
+          disabled={isLoading}
+          className="bg-brand-blue text-white p-2.5 rounded-lg disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
+        >
+          <Send className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
 };
+
+const MessageItem = React.memo<{ message: ChatMessage }>(({ message }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 5 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
+  >
+    <div className={`max-w-[85%] p-3 rounded-xl text-sm ${
+      message.role === 'user' ? 'bg-brand-blue text-white' : 'bg-white border border-surface-200 text-ink-800 shadow-sm'
+    }`}>
+      <div className="markdown-body">
+        <Markdown>{message.content}</Markdown>
+      </div>
+    </div>
+    {message.role === 'ai' && message.confidenceScore !== undefined && (
+      <div className="mt-2 flex items-center gap-2 px-1">
+        <div className="text-[9px] font-bold text-ink-700/40 uppercase tracking-widest">
+          Confidence: {message.confidenceScore}%
+        </div>
+        <div className="w-12 h-0.5 bg-surface-200 rounded-full overflow-hidden">
+          <div className="h-full bg-brand-blue" style={{ width: `${message.confidenceScore}%` }} />
+        </div>
+      </div>
+    )}
+  </motion.div>
+));
+
+const LoadingMessage = () => (
+  <div className="flex items-center gap-2 text-xs text-ink-700/50 italic">
+    <Loader2 className="w-3 h-3 animate-spin" />
+    Syncing institutional data...
+  </div>
+);
 
 export default React.memo(ChatAssistant);

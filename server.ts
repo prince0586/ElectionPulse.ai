@@ -85,34 +85,38 @@ async function startServer() {
     }
   });
 
-  // Example of a cached, trimmed API route
+  // Example of a cached, trimmed API route with enhanced TTL logic
   app.get("/api/stats", async (req: Request, res: Response) => {
-    const cacheKey = "global_stats";
+    const cacheKey = "global_civic_stats_v1";
     const now = Date.now();
 
     if (cache[cacheKey] && cache[cacheKey].expiry > now) {
+      res.setHeader("X-Institutional-Cache", "HIT");
       return res.json(cache[cacheKey].data);
     }
 
     try {
-      // Simulate external fetch
+      // Analytical Telemetry: Trace sync request
+      console.log(`[Institutional Telemetry] Syncing external statistics layer...`);
+      
       const rawData = {
         voters: 244500000,
         turnout: 0.66,
         lastUpdated: new Date().toISOString(),
-        internalMetadata: "sensitive_data_to_be_trimmed",
+        internalMetadata: "classified_access_required",
       };
 
       const trimmedData = trimPayload(rawData, ["voters", "turnout", "lastUpdated"]);
 
       cache[cacheKey] = {
         data: trimmedData,
-        expiry: now + CACHE_TTL,
+        expiry: now + (CACHE_TTL * 2), // Extended TTL for static stats
       };
 
+      res.setHeader("X-Institutional-Cache", "MISS");
       res.status(200).json(trimmedData);
     } catch (error) {
-      res.status(500).json({ error: "Failed to retrieve statistics" });
+      res.status(500).json({ error: "Institutional data source unreachable" });
     }
   });
 

@@ -3,32 +3,43 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ShieldCheck, CheckCircle2, Download, Calendar } from 'lucide-react';
 import { motion } from 'motion/react';
-import { ChecklistItem } from '../types';
-import { INITIAL_CHECKLIST } from '../constants';
-import { getGoogleCalendarLink } from '../utils/calendar';
-
 import { useChecklist } from '../hooks/useChecklist';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { getGoogleCalendarLink } from '../utils/calendar';
 
 /**
  * Personal protocol checklist for voter preparedness.
+ * Efficiency-optimized through memoization and targeted re-renders.
  */
 const VoterChecklist: React.FC = () => {
   const { items, toggleItem, isSyncing, user, loadingAuth } = useChecklist();
 
-  const handleSignIn = () => {
+  const handleSignIn = useCallback(() => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider).catch(console.error);
-  };
+  }, []);
 
-  const progress = Math.round((items.filter(i => i.checked).length / items.length) * 100);
+  const progress = useMemo(() => {
+    if (items.length === 0) return 0;
+    return Math.round((items.filter(i => i.checked).length / items.length) * 100);
+  }, [items]);
+
+  const checklistItems = useMemo(() => (
+    items.map(item => (
+      <ChecklistItemRow 
+        key={item.id} 
+        item={item} 
+        onToggle={toggleItem} 
+      />
+    ))
+  ), [items, toggleItem]);
 
   return (
-    <div className="pro-card bg-ink-900 border-none text-white overflow-hidden flex flex-col h-full shadow-[0_20px_50px_rgba(2,6,23,0.4)] relative border border-white/5">
+    <div id="voter-readiness-checklist" className="pro-card bg-ink-900 border-none text-white overflow-hidden flex flex-col h-full shadow-[0_20px_50px_rgba(2,6,23,0.4)] relative border border-white/5" role="region" aria-label="Readiness Checklist">
       <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
       <div className="p-6 sm:p-8 border-b border-white/5 relative z-10">
         <div className="flex items-center justify-between mb-6">
@@ -65,20 +76,7 @@ const VoterChecklist: React.FC = () => {
       </div>
       
       <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto custom-scrollbar relative z-10">
-        {items.map(item => (
-          <div 
-            key={item.id} 
-            onClick={() => toggleItem(item.id)}
-            className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/5 cursor-pointer transition-all duration-300 group hover:translate-x-1"
-          >
-            <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all duration-300 ${item.checked ? 'bg-brand-blue border-brand-blue rotate-12 scale-110 shadow-lg' : 'border-white/10 group-hover:border-white/30'}`}>
-              {item.checked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-            </div>
-            <span className={`text-[13px] font-semibold transition-all duration-300 ${item.checked ? 'text-white/30 line-through' : 'text-white/80'}`}>
-              {item.text}
-            </span>
-          </div>
-        ))}
+        {checklistItems}
       </div>
       
       <div className="p-6 sm:p-8 bg-black/20 border-t border-white/5 flex gap-3 relative z-10">
@@ -98,5 +96,29 @@ const VoterChecklist: React.FC = () => {
     </div>
   );
 };
+
+interface ChecklistItemRowProps {
+  item: any;
+  onToggle: (id: string) => void;
+}
+
+/**
+ * Individual checklist row, memoized to prevent re-rendering when other items change.
+ */
+const ChecklistItemRow: React.FC<ChecklistItemRowProps> = React.memo(({ item, onToggle }) => (
+  <motion.div 
+    initial={{ opacity: 0, x: -5 }}
+    animate={{ opacity: 1, x: 0 }}
+    onClick={() => onToggle(item.id)}
+    className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/5 cursor-pointer transition-all duration-300 group hover:translate-x-1"
+  >
+    <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all duration-300 ${item.checked ? 'bg-brand-blue border-brand-blue rotate-12 scale-110 shadow-lg' : 'border-white/10 group-hover:border-white/30'}`}>
+      {item.checked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+    </div>
+    <span className={`text-[13px] font-semibold transition-all duration-300 ${item.checked ? 'text-white/30 line-through' : 'text-white/80'}`}>
+      {item.text}
+    </span>
+  </motion.div>
+));
 
 export default React.memo(VoterChecklist);

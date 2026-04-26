@@ -24,14 +24,27 @@ export interface FAQItem {
   answer: string;
 }
 
+export interface GroundingSource {
+  title: string;
+  url: string;
+  snippet?: string;
+  html?: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'ai';
   content: string;
-  citations?: Array<{
-    title: string;
-    html: string;
-  }>;
+  timestamp: string;
+  citations?: GroundingSource[];
   confidenceScore?: number;
+  isStreaming?: boolean;
+}
+
+export interface UserPreferences {
+  zipCode: string;
+  isHighContrast: boolean;
+  onboardingComplete: boolean;
+  lastLogin: string;
 }
 
 export interface LocationData {
@@ -48,6 +61,7 @@ export interface GoogleCalendarEvent {
 }
 
 export interface CivicPollingLocation {
+  id: string;
   address: {
     locationName?: string;
     line1: string;
@@ -57,11 +71,14 @@ export interface CivicPollingLocation {
   };
   pollingHours?: string;
   notes?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CivicContest {
   type: string;
   office?: string;
+  ballotTitle?: string;
   district?: {
     name: string;
     scope: string;
@@ -69,11 +86,15 @@ export interface CivicContest {
   candidates?: Array<{
     name: string;
     party: string;
+    candidateUrl?: string;
+    channels?: Array<{ type: string; id: string }>;
   }>;
 }
 
 export interface ChecklistItem {
-  id: number;
+  id: string;
   text: string;
   checked: boolean;
+  priority: 'low' | 'medium' | 'high';
+  updatedAt: string;
 }
