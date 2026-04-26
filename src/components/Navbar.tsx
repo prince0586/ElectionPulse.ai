@@ -14,6 +14,8 @@ import { signOut } from 'firebase/auth';
 interface NavbarProps {
   isHighContrast: boolean;
   toggleContrast: () => void;
+  isMotionEnabled: boolean;
+  toggleMotion: () => void;
   currentTheme: ThemeType;
   setTheme: (theme: ThemeType) => void;
   onProfileClick: () => void;
@@ -23,7 +25,15 @@ interface NavbarProps {
  * Navbar component for institutional navigation and accessibility controls.
  * Updated with mobile menu for full responsive accessibility.
  */
-const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, currentTheme, setTheme, onProfileClick }) => {
+const Navbar: React.FC<NavbarProps> = ({ 
+  isHighContrast, 
+  toggleContrast, 
+  isMotionEnabled,
+  toggleMotion,
+  currentTheme, 
+  setTheme, 
+  onProfileClick 
+}) => {
   const [user] = useAuthState(auth);
   const [showThemePicker, setShowThemePicker] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
@@ -61,7 +71,32 @@ const Navbar: React.FC<NavbarProps> = ({ isHighContrast, toggleContrast, current
               
               {showThemePicker && (
                 <div className={`absolute top-full right-0 mt-2 w-64 p-3 rounded-2xl shadow-2xl border animate-in fade-in slide-in-from-top-2 duration-200 ${isHighContrast ? 'bg-surface-50 border-ink-900' : 'bg-white border-surface-100'}`}>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3 px-2">Design Protocol Preview</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3 px-2">Institutional Protocol</p>
+                    
+                    <div className="px-2 mb-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wide">High Contrast</span>
+                        <button 
+                          onClick={toggleContrast}
+                          className={`w-8 h-4 rounded-full relative transition-all ${isHighContrast ? 'bg-brand-blue' : 'bg-slate-200'}`}
+                        >
+                          <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isHighContrast ? 'left-4.5' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wide">Motion Safety</span>
+                        <button 
+                          onClick={toggleMotion}
+                          className={`w-8 h-4 rounded-full relative transition-all ${isMotionEnabled ? 'bg-brand-blue' : 'bg-slate-200'}`}
+                        >
+                          <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isMotionEnabled ? 'left-4.5' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="h-[1px] bg-surface-100 mx-2 mb-3" />
+                    
+                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3 px-2">Design Variant</p>
                   <div className="space-y-1">
                     {THEMES.map(theme => (
                       <button

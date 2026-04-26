@@ -27,6 +27,26 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   isLocating, 
   fetchLocation 
 }) => {
+  const [countdown, setCountdown] = React.useState({ days: 0, hours: 0, mins: 0, secs: 0 });
+
+  React.useEffect(() => {
+    const electionDate = new Date('2026-11-03T07:00:00Z').getTime();
+    
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = electionDate - now;
+
+      setCountdown({
+        days: Math.max(0, Math.floor(distance / (1000 * 60 * 60 * 24))),
+        hours: Math.max(0, Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))),
+        mins: Math.max(0, Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))),
+        secs: Math.max(0, Math.floor((distance % (1000 * 60)) / 1000))
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const detectLocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -81,11 +101,30 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 </li>
               </ul>
             </div>
-            <div className="p-5 sm:p-6 rounded-2xl bg-surface-100 border border-surface-200/50">
-              <h4 className="text-[10px] sm:text-[11px] font-bold text-ink-700 uppercase tracking-[0.2em] mb-4">Next Milestone</h4>
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl sm:text-4xl font-display font-black text-ink-900">142</span>
-                <span className="text-[10px] sm:text-[11px] font-bold text-ink-700/50 uppercase tracking-widest">Days to Cycle</span>
+            <div className="p-5 sm:p-6 rounded-2xl bg-surface-100 border border-surface-200/50 group/timer relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-5 group-hover/timer:opacity-10 transition-opacity">
+                 <ShieldCheck className="w-12 h-12 text-brand-blue" />
+              </div>
+              <h4 className="text-[10px] sm:text-[11px] font-bold text-ink-700 uppercase tracking-[0.2em] mb-4">Precision Cycle Tracker</h4>
+              <div className="flex gap-4">
+                {[
+                  { label: 'D', value: countdown.days },
+                  { label: 'H', value: countdown.hours },
+                  { label: 'M', value: countdown.mins }
+                ].map((item) => (
+                  <div key={item.label} className="flex flex-col items-center">
+                    <span className="text-2xl sm:text-3xl font-display font-black text-ink-900 leading-none">
+                      {item.value.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[8px] font-bold text-ink-700/40 uppercase tracking-widest mt-1">{item.label}</span>
+                  </div>
+                ))}
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl sm:text-3xl font-display font-black text-brand-blue leading-none animate-pulse">
+                    {countdown.secs.toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-[8px] font-bold text-brand-blue/40 uppercase tracking-widest mt-1">S</span>
+                </div>
               </div>
             </div>
           </div>

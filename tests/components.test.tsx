@@ -18,6 +18,8 @@ describe('Institutional UI Components', () => {
         <Navbar 
           isHighContrast={false} 
           toggleContrast={toggle} 
+          isMotionEnabled={true}
+          toggleMotion={vi.fn()}
           currentTheme="minimal" 
           setTheme={vi.fn()} 
           onProfileClick={vi.fn()}
@@ -32,6 +34,8 @@ describe('Institutional UI Components', () => {
         <Navbar 
           isHighContrast={false} 
           toggleContrast={toggle} 
+          isMotionEnabled={true}
+          toggleMotion={vi.fn()}
           currentTheme="minimal" 
           setTheme={vi.fn()} 
           onProfileClick={vi.fn()}

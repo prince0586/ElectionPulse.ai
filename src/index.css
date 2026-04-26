@@ -157,3 +157,10 @@
 .noir-gradient {
   background: linear-gradient(135deg, var(--color-ink-900) 0%, #1e1b4b 100%);
 }
+
+.reduce-motion * {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}

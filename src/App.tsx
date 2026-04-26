@@ -36,6 +36,7 @@ import FAQSection from './components/FAQSection';
 import RepresentativeFinder from './components/RepresentativeFinder';
 import ErrorBoundary from './components/ErrorBoundary';
 import UserProfile from './components/UserProfile';
+import ResourceMatrix from './components/ResourceMatrix';
 import Footer from './components/Footer';
 
 // --- Lazy Components ---
@@ -51,6 +52,7 @@ export default function App() {
   const [civicData, setCivicData] = useState<any>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isHighContrast, setIsHighContrast] = useState(false);
+  const [isMotionEnabled, setIsMotionEnabled] = useState(true);
   const [theme, setTheme] = useState<ThemeType>('minimal');
   const [dailyTip, setDailyTip] = useState("Research local ballot measures to understand community impact.");
   const [view, setView] = useState<'home' | 'profile'>('home');
@@ -61,7 +63,14 @@ export default function App() {
     root.classList.remove('theme-institutional', 'theme-brutalist', 'theme-minimal', 'theme-editorial');
     root.classList.add(`theme-${theme}`);
     root.style.setProperty('--theme-transition', '0.5s');
-  }, [theme]);
+
+    // Motion Safety Protocol
+    if (!isMotionEnabled) {
+      root.classList.add('reduce-motion');
+    } else {
+      root.classList.remove('reduce-motion');
+    }
+  }, [theme, isMotionEnabled]);
 
   const tips = useMemo(() => [
     "Check registration status 45 days before the cycle.",
@@ -138,6 +147,8 @@ export default function App() {
         <Navbar 
           isHighContrast={isHighContrast} 
           toggleContrast={() => setIsHighContrast(!isHighContrast)} 
+          isMotionEnabled={isMotionEnabled}
+          toggleMotion={() => setIsMotionEnabled(!isMotionEnabled)}
           currentTheme={theme}
           setTheme={setTheme}
           onProfileClick={() => setView('profile')}
@@ -191,6 +202,9 @@ export default function App() {
 
               {/* --- Secondary Context Cards --- */}
               <MetricCards />
+
+              {/* --- Resource Bento Grid --- */}
+              <ResourceMatrix />
 
               {/* --- Process & Advisor Grid --- */}
               <section id="process" className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8">
