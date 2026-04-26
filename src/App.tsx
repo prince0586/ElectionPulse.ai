@@ -196,11 +196,11 @@ export default function App() {
             
             {location && <LocalMetrics location={location} civicData={civicData} />}
             
-            <Suspense fallback={<div className="pro-card animate-pulse h-48 bg-surface-100" />}>
+            <Suspense fallback={<div className="pro-card animate-pulse h-[300px] bg-surface-100" />}>
               <HistoricalPulse />
             </Suspense>
             
-            <Suspense fallback={<div className="pro-card animate-pulse h-64 bg-surface-100" />}>
+            <Suspense fallback={<div className="pro-card animate-pulse h-[400px] bg-surface-100" />}>
               {location && <PollingStationMap location={location} civicData={civicData} />}
             </Suspense>
             

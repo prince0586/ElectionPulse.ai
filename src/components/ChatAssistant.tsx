@@ -159,13 +159,39 @@ const MessageItem = React.memo<{ message: ChatMessage }>(({ message }) => (
       </div>
     </div>
     {message.role === 'ai' && message.confidenceScore !== undefined && (
-      <div className="mt-2 flex items-center gap-2 px-1">
-        <div className="text-[9px] font-bold text-ink-700/40 uppercase tracking-widest">
-          Confidence: {message.confidenceScore}%
+      <div className="mt-3 flex flex-col gap-2 w-full">
+        <div className="flex items-center gap-3 px-1">
+          <div className="text-[9px] font-bold text-ink-700/40 uppercase tracking-widest">
+            Confidence: {message.confidenceScore}%
+          </div>
+          <div className="w-12 h-1 bg-surface-200 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-brand-blue" 
+              initial={{ width: 0 }}
+              animate={{ width: `${message.confidenceScore}%` }}
+            />
+          </div>
         </div>
-        <div className="w-12 h-0.5 bg-surface-200 rounded-full overflow-hidden">
-          <div className="h-full bg-brand-blue" style={{ width: `${message.confidenceScore}%` }} />
-        </div>
+        
+        {message.citations && message.citations.length > 0 && (
+          <div className="flex flex-col gap-1.5 mt-1">
+            {message.citations.map((cite, idx) => (
+              <div key={idx} className="bg-brand-blue/5 border border-brand-blue/10 rounded-lg p-2.5 flex items-center justify-between group transition-all hover:bg-brand-blue/10">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <Search className="w-3 h-3 text-brand-blue shrink-0" />
+                  <span className="text-[9px] font-bold text-brand-blue uppercase tracking-tight opacity-70 shrink-0">Source {idx + 1}:</span>
+                  <div 
+                    className="text-[10px] font-medium text-brand-blue truncate"
+                    dangerouslySetInnerHTML={{ 
+                      __html: cite.html?.replace(/<a /g, '<a rel="noopener noreferrer" target="_blank" class="underline hover:opacity-70 transition-opacity" ') || cite.title 
+                    }} 
+                  />
+                </div>
+                <ExternalLink className="w-2.5 h-2.5 text-brand-blue opacity-30 group-hover:opacity-100 transition-opacity shrink-0" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     )}
   </motion.div>

@@ -1,6 +1,16 @@
 {
-  "name": "Election Pulse.ai",
-  "description": "Institutional-grade election intelligence platform featuring grounded AI advisors, persistent Firestore voter protocols, and real-time localized metrics.",
-  "requestFramePermissions": ["geolocation"],
-  "majorCapabilities": []
+  "name": "Election Pulse AI",
+  "description": "Institutional-grade election intelligence platform featuring grounded AI advisors, persistent voter protocols via Firestore, and real-time localized metrics. Designed for high-fidelity civic engagement and non-partisan information dissemination.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "Institutional AI Advisory",
+    "Grounded Search Grounding",
+    "Civic Data Integration",
+    "Persistence Layer with Firebase",
+    "Interactive Decision Infrastructure"
+  ]
 }
